@@ -2,6 +2,10 @@
 
 A PS5-inspired Electron launcher for `D:\Games`. Game artwork fills the screen, with a compact game row and minimal controls.
 
+[![Orbit walkthrough showing game selection and Library search](docs/media/orbit-demo.gif)](docs/media/orbit-demo.mp4)
+
+[Watch the full walkthrough](docs/media/orbit-demo.mp4)
+
 Double-click `Launch Orbit.cmd`, or open `release\Orbit\Orbit.exe` after packaging. Keep the entire `release\Orbit` folder together when moving the app. The packaged app runs without Node.js. Games and Library work offline; the PlayZip catalogue requires an internet connection.
 
 The header doubles as the window title bar. Drag its empty space to move the window, or double-click to maximize and restore. Native minimize, maximize, and close controls sit over the artwork and retain Windows Snap layouts. Navigation and utility buttons remain clickable. F11 switches to fullscreen.
@@ -30,6 +34,8 @@ npm run package
 The smoke check loads the production UI in a hidden, sandboxed Electron window and checks the preload bridge, game detection, artwork, launch error feedback, and catalogue UI using the tracked catalogue samples. It checks pagination, search, iframe creation and removal, catalogue errors, and title-bar spacing at 900 and 1280 pixels. It intercepts launches, so it does not start a game. It needs at least one installed game in `D:\Games`.
 
 To also exercise native maximize, fullscreen, minimize, and restore in a visible window, run `$env:ORBIT_WINDOW_CHECK = '1'; npm run smoke` in PowerShell. Remove the variable afterward with `Remove-Item Env:ORBIT_WINDOW_CHECK`.
+
+`npm run record:demo` refreshes the silent MP4 walkthrough and animated README preview in `docs/media`. It requires FFmpeg on PATH and games in `D:\Games`. It records the Electron renderer without launching games or starting downloads.
 
 ## Controls
 

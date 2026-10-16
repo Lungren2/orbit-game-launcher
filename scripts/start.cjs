@@ -4,7 +4,8 @@ const env = { ...process.env };
 // Terminal hosts built on Electron may export this variable for their helpers.
 delete env.ELECTRON_RUN_AS_NODE;
 const smoke = process.argv.includes('--smoke');
+const recordDemo = process.argv.includes('--record-demo');
 const packaged = process.argv.includes('--packaged');
-const child = spawn(packaged ? path.join(__dirname, '../release/Orbit/Orbit.exe') : require('electron'), packaged ? [] : [smoke ? path.join(__dirname, 'smoke.cjs') : '.'], { cwd: path.join(__dirname, '..'), env, stdio: 'inherit', windowsHide: smoke });
+const child = spawn(packaged ? path.join(__dirname, '../release/Orbit/Orbit.exe') : require('electron'), packaged ? [] : [smoke ? path.join(__dirname, 'smoke.cjs') : recordDemo ? path.join(__dirname, 'record-demo.cjs') : '.'], { cwd: path.join(__dirname, '..'), env, stdio: 'inherit', windowsHide: smoke || recordDemo });
 child.once('error', error => { console.error(error.message); process.exitCode = 1; });
 child.once('exit', code => { process.exitCode = code ?? 1; });
