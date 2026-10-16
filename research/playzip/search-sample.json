@@ -1,0 +1,16 @@
+{
+  "source": "playzip-html",
+  "url": "https://playzip.com/?page=1&sort=views&l=english&keywords=Stardew",
+  "page": 1,
+  "totalPages": 1,
+  "count": 1,
+  "games": [
+    {
+      "id": 226,
+      "url": "https://playzip.com/game/226",
+      "name": "Stardew Valley",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/413150/library_600x900_2x.jpg",
+      "steamAppId": 413150
+    }
+  ]
+}

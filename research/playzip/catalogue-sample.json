@@ -1,0 +1,219 @@
+{
+  "source": "playzip-html",
+  "url": "https://playzip.com/?page=1&sort=views&l=english",
+  "page": 1,
+  "totalPages": 96,
+  "count": 30,
+  "games": [
+    {
+      "id": 3461,
+      "url": "https://playzip.com/game/3461",
+      "name": "How to Fish",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/4001890/280684ffc5f512083f4e81a551df2b9ae3ff71db/library_capsule_2x.jpg",
+      "steamAppId": 4001890
+    },
+    {
+      "id": 2728,
+      "url": "https://playzip.com/game/2728",
+      "name": "Black Myth: Wukong",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2358720/library_600x900_2x.jpg",
+      "steamAppId": 2358720
+    },
+    {
+      "id": 3637,
+      "url": "https://playzip.com/game/3637",
+      "name": "ForgeTax",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/5245810/a384ff6908082f06ba9e490e3be3d0b2ebed560f/library_capsule_2x.jpg",
+      "steamAppId": 5245810
+    },
+    {
+      "id": 3533,
+      "url": "https://playzip.com/game/3533",
+      "name": "Wanderburg",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3624140/4ecff458107e640f3bf635f6919dcf103cb8e6ca/library_capsule_2x.jpg",
+      "steamAppId": 3624140
+    },
+    {
+      "id": 3604,
+      "url": "https://playzip.com/game/3604",
+      "name": "Kingdom Rush 6: Genesis TD",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/4259190/0b362a80f35d238d85f7bface4783cef0b1f1294/library_capsule_2x.jpg",
+      "steamAppId": 4259190
+    },
+    {
+      "id": 3529,
+      "url": "https://playzip.com/game/3529",
+      "name": "Last Breath",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/4298500/7024b82de33e5470f4e2966d70065804602c3b84/library_capsule_2x.jpg",
+      "steamAppId": 4298500
+    },
+    {
+      "id": 3603,
+      "url": "https://playzip.com/game/3603",
+      "name": "Graveyard Keeper 2",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/4358690/7f0508c2bad5094c42da2525b1946feed2a3d23a/library_capsule_2x.jpg",
+      "steamAppId": 4358690
+    },
+    {
+      "id": 12,
+      "url": "https://playzip.com/game/12",
+      "name": "ELDEN RING",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1245620/library_600x900_2x.jpg",
+      "steamAppId": 1245620
+    },
+    {
+      "id": 878,
+      "url": "https://playzip.com/game/878",
+      "name": "BeamNG.drive",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/284160/5b9d29c96707cb4b3de0e75428255f7d7c319b7a/library_capsule_2x.jpg",
+      "steamAppId": 284160
+    },
+    {
+      "id": 2823,
+      "url": "https://playzip.com/game/2823",
+      "name": "Forza Horizon 6",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2483190/711e39803402def82a90e1f31578c64744f952f3/library_capsule_2x.jpg",
+      "steamAppId": 2483190
+    },
+    {
+      "id": 15,
+      "url": "https://playzip.com/game/15",
+      "name": "Sekiro: Shadows Die Twice - GOTY Edition",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/814380/library_600x900_2x.jpg",
+      "steamAppId": 814380
+    },
+    {
+      "id": 3507,
+      "url": "https://playzip.com/game/3507",
+      "name": "The Blood of Dawnwalker",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3751260/82769ab631e6e68b4a38bbba9fb5b74eb0d7db8d/library_capsule_2x.jpg",
+      "steamAppId": 3751260
+    },
+    {
+      "id": 3365,
+      "url": "https://playzip.com/game/3365",
+      "name": "Crimson Desert",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3321460/0ea942465fd1dff8a7fbc11cc9fca8c476c5e5ae/library_capsule_2x.jpg",
+      "steamAppId": 3321460
+    },
+    {
+      "id": 3067,
+      "url": "https://playzip.com/game/3067",
+      "name": "007 First Light",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3768760/1159a696d257cbeb3f4479be3466cfba2ae938a0/library_600x900_2x.jpg",
+      "steamAppId": 3768760
+    },
+    {
+      "id": 2654,
+      "url": "https://playzip.com/game/2654",
+      "name": "Resident Evil Requiem",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3764200/ed3b2cae7d15f598f41006f5f1e605ec5517b5e4/library_capsule_2x.jpg",
+      "steamAppId": 3764200
+    },
+    {
+      "id": 3484,
+      "url": "https://playzip.com/game/3484",
+      "name": "NBA 2K27",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/4356430/11042c2123d0b2f5e98e0218e6072fa8f239603d/library_capsule_2x.jpg",
+      "steamAppId": 4356430
+    },
+    {
+      "id": 2780,
+      "url": "https://playzip.com/game/2780",
+      "name": "Stellar Blade",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3489700/6f2bbe8f34fc283f42acbe4ab184e9a40f76ad51/library_600x900_2x.jpg",
+      "steamAppId": 3489700
+    },
+    {
+      "id": 1470,
+      "url": "https://playzip.com/game/1470",
+      "name": "Grand Theft Auto V Enhanced",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3240220/394239e5da54fed177bd0ab04590812f6add1bb5/library_600x900_2x.jpg",
+      "steamAppId": 3240220
+    },
+    {
+      "id": 3414,
+      "url": "https://playzip.com/game/3414",
+      "name": "Survival Log",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/4164790/e186e8414c0ab33c57c96fa2406924e2adbabc0c/library_capsule_2x.jpg",
+      "steamAppId": 4164790
+    },
+    {
+      "id": 20,
+      "url": "https://playzip.com/game/20",
+      "name": "Cyberpunk 2077",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1091500/fc7064f4a8ee2960eb51f5872d7990d771f26d2e/library_600x900_2x.jpg",
+      "steamAppId": 1091500
+    },
+    {
+      "id": 134,
+      "url": "https://playzip.com/game/134",
+      "name": "Plants vs. Zombies GOTY Edition",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3590/library_600x900_2x.jpg",
+      "steamAppId": 3590
+    },
+    {
+      "id": 152,
+      "url": "https://playzip.com/game/152",
+      "name": "Hollow Knight",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/367520/library_600x900_2x.jpg",
+      "steamAppId": 367520
+    },
+    {
+      "id": 2990,
+      "url": "https://playzip.com/game/2990",
+      "name": "万词破 - 单词女友",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1981560/7c581cdd1d62a9204109e073b57fbde7b15369f7/library_capsule_2x.jpg",
+      "steamAppId": 1981560
+    },
+    {
+      "id": 153,
+      "url": "https://playzip.com/game/153",
+      "name": "Project Zomboid",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/108600/library_600x900_2x.jpg",
+      "steamAppId": 108600
+    },
+    {
+      "id": 359,
+      "url": "https://playzip.com/game/359",
+      "name": "Hearts of Iron IV",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/394360/library_600x900_2x.jpg",
+      "steamAppId": 394360
+    },
+    {
+      "id": 3513,
+      "url": "https://playzip.com/game/3513",
+      "name": "Persona 3 Reload",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2161700/library_600x900_2x.jpg",
+      "steamAppId": 2161700
+    },
+    {
+      "id": 1290,
+      "url": "https://playzip.com/game/1290",
+      "name": "Night Shift Nurses",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3239270/library_600x900_2x.jpg",
+      "steamAppId": 3239270
+    },
+    {
+      "id": 379,
+      "url": "https://playzip.com/game/379",
+      "name": "Dave The Diver",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1868140/library_600x900_2x.jpg",
+      "steamAppId": 1868140
+    },
+    {
+      "id": 3524,
+      "url": "https://playzip.com/game/3524",
+      "name": "Tap Dungeon",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/4676750/b0accada0bf65af58c07a0334701b8eb5aac0fa1/library_capsule_2x.jpg",
+      "steamAppId": 4676750
+    },
+    {
+      "id": 3605,
+      "url": "https://playzip.com/game/3605",
+      "name": "CONTROL Resonant",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3669870/7d4b4f430dc4d07e6562eb445456f9615cb52f77/library_capsule_2x.jpg",
+      "steamAppId": 3669870
+    }
+  ]
+}

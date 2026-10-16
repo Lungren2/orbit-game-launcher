@@ -1,0 +1,65 @@
+{
+  "verifiedAt": "2026-10-15T04:27:30.046Z",
+  "root": "D:\\Games",
+  "games": [
+    {
+      "id": "616c3984826c8e4a",
+      "name": "Cities: Skylines II",
+      "folder": "D:\\Games\\Cities Skylines II",
+      "executable": "D:\\Games\\Cities Skylines II\\Cities2.exe",
+      "candidates": [
+        "D:\\Games\\Cities Skylines II\\Cities2.exe"
+      ],
+      "needsChoice": false
+    },
+    {
+      "id": "d825caacf2315101",
+      "name": "Dimraeth",
+      "folder": "D:\\Games\\Dimraeth",
+      "executable": "D:\\Games\\Dimraeth\\Dimraeth.exe",
+      "candidates": [
+        "D:\\Games\\Dimraeth\\Dimraeth.exe"
+      ],
+      "needsChoice": false
+    },
+    {
+      "id": "169adc54b6494749",
+      "name": "Scritchy Scratchy",
+      "folder": "D:\\Games\\Scritchy Scratchy",
+      "executable": "D:\\Games\\Scritchy Scratchy\\ScritchyScratchy.exe",
+      "candidates": [
+        "D:\\Games\\Scritchy Scratchy\\ScritchyScratchy.exe"
+      ],
+      "needsChoice": false
+    },
+    {
+      "id": "141c598e53631231",
+      "name": "Stardew Valley",
+      "folder": "D:\\Games\\Stardew Valley",
+      "executable": "D:\\Games\\Stardew Valley\\Stardew Valley.exe",
+      "candidates": [
+        "D:\\Games\\Stardew Valley\\Stardew Valley.exe"
+      ],
+      "needsChoice": false
+    },
+    {
+      "id": "17a0303fab1167c8",
+      "name": "Vampire Survivors",
+      "folder": "D:\\Games\\Vampire Survivors",
+      "executable": "D:\\Games\\Vampire Survivors\\VampireSurvivors.exe",
+      "candidates": [
+        "D:\\Games\\Vampire Survivors\\VampireSurvivors.exe"
+      ],
+      "needsChoice": false
+    }
+  ],
+  "checks": [
+    "Five games discovered",
+    "Correct main executables",
+    "Utilities excluded",
+    "Archive excluded",
+    "Executable validation passed",
+    "Stable IDs across scans"
+  ],
+  "gamesLaunched": false
+}

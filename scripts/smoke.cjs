@@ -1,0 +1,91 @@
+// Verify the production renderer and sandboxed Electron bridge without launching games.
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('node:path');
+const assert = require('node:assert/strict');
+const { scanLibrary } = require('../electron/library.cjs');
+const fs = require('node:fs/promises');
+app.whenReady().then(async () => {
+  const errors = [];
+  const win = new BrowserWindow({ show: false, width: 1280, height: 800, webPreferences: { preload: path.join(__dirname, '../electron/preload.cjs'), sandbox: true, contextIsolation: true, nodeIntegration: false, offscreen: true, backgroundThrottling: false } });
+  win.webContents.on('console-message', (_, level, message) => { if (level >= 3) errors.push(message); });
+  ipcMain.handle('library', async () => ({ ok: true, data: { ...await scanLibrary('D:\\Games'), favorites: [], recent: {}, executables: {} } }));
+  ipcMain.handle('launch', async () => ({ ok: false, error: 'Smoke test: launch intercepted' }));
+  ipcMain.handle('downloads', async () => ({ ok: true, data: [] }));
+  ipcMain.handle('download-control', async (_, id, action) => ({ ok: true, data: [{ id, game: { name: 'Fixture import', coverUrl: null }, status: action === 'pause' ? 'paused' : 'downloading', received: 50, total: 100, live: true, resumable: true }] }));
+  ipcMain.handle('prepare-download', async () => ({ ok: true, data: 'smoke-token' }));
+  ipcMain.handle('end-download-context', async () => ({ ok: true }));
+  ipcMain.handle('catalogue', async (_, options) => {
+    if (options.keywords === 'offline-test') return { ok: false, error: 'Catalogue offline test' };
+    const html = await fs.readFile(path.join(__dirname, '../research/playzip', options.keywords ? 'playzip-search.html' : options.page === 2 ? 'category.html' : 'playzip-home.html'), 'utf8');
+    return { ok: true, data: { html, url: 'https://playzip.com/' } };
+  });
+  try {
+    await win.loadFile(path.join(__dirname, '../dist/index.html'));
+    const result = await win.webContents.executeJavaScript(`(async () => {
+      for (let i = 0; i < 100 && !document.querySelector('#play'); i++) await new Promise(r => setTimeout(r, 50));
+      await Promise.all([...document.images].map(img => img.decode().catch(() => {})));
+      const data = await window.orbit.library();
+      const initial = { bridge: !!window.orbit, games: data.data.games.length, tiles: document.querySelectorAll('.game-tile').length, nodeIsolated: typeof require === 'undefined', brokenImages: [...document.images].filter(i => !i.naturalWidth).map(i => i.src), play: !!document.querySelector('#play') };
+      document.querySelector('#play').click();
+      await new Promise(r => setTimeout(r, 100));
+      initial.launchError = document.querySelector('.toast').textContent;
+      return initial;
+    })()`);
+    assert.equal(result.bridge, true); assert.equal(result.nodeIsolated, true);
+    assert.equal(result.games, 5); assert.equal(result.tiles, 5); assert.equal(result.play, true);
+    assert.deepEqual(result.brokenImages, []);
+    assert.match(result.launchError, /launch intercepted/);
+    const catalogue = await win.webContents.executeJavaScript(`(async () => {
+      const wait = async test => { for (let i=0;i<200;i++) { if(test()) return; await new Promise(r=>setTimeout(r,25)); } throw new Error('Catalogue UI timed out'); };
+      document.querySelector('[data-view="catalogue"]').click();
+      await wait(()=>document.querySelectorAll('.catalogue-card').length === 30);
+      const data={cards:document.querySelectorAll('.catalogue-card').length,pages:document.querySelector('#catalogue-page').max};
+      document.querySelector('#catalogue-next').click();
+      await wait(()=>document.querySelector('#catalogue-page').value === '2' && document.querySelectorAll('.catalogue-card').length === 30);
+      data.page2=true;
+      const search=document.querySelector('#catalogue-search');search.value='Stardew';
+      document.querySelector('#catalogue-search-form').requestSubmit();
+      await wait(()=>document.querySelectorAll('.catalogue-card').length === 1);
+      data.search=document.querySelector('.catalogue-title').textContent;
+      document.querySelector('.catalogue-card').click();
+      await wait(()=>!!document.querySelector('iframe'));
+      data.frame={url:document.querySelector('iframe').src,sandbox:document.querySelector('iframe').getAttribute('sandbox'),modal:document.querySelector('dialog').open};
+      document.querySelector('#close-dialog').click();
+      await wait(()=>!document.querySelector('iframe'));
+      data.frameRemoved=true;
+      document.querySelector('#catalogue-search').value='offline-test';
+      document.querySelector('#catalogue-search-form').requestSubmit();
+      await wait(()=>!!document.querySelector('#catalogue-retry'));
+      data.error=document.querySelector('.catalogue-message').textContent;
+      document.querySelector('[data-view="games"]').click();
+      data.localIntact=document.querySelectorAll('.game-tile').length===5;
+      return data;
+    })()`);
+    assert.equal(catalogue.cards, 30); assert.equal(catalogue.pages, '96');
+    assert.equal(catalogue.page2, true); assert.equal(catalogue.search, 'Stardew Valley');
+    assert.equal(catalogue.frame.url, 'https://playzip.com/game/226');
+    assert.equal(catalogue.frame.modal, true);
+    assert.equal(catalogue.frame.sandbox, 'allow-scripts allow-same-origin allow-forms allow-downloads allow-popups');
+    assert.equal(catalogue.frameRemoved, true); assert.equal(catalogue.localIntact, true);
+    assert.match(catalogue.error, /Catalogue offline test/);
+    win.webContents.send('downloads-changed', [{ id: 'fixture-job', game: { name: 'Fixture import', coverUrl: null }, status: 'downloading', received: 50, total: 100, live: true }]);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    const downloadUI = await win.webContents.executeJavaScript(`(async()=>{
+      document.querySelector('#downloads-button').click();
+      const result={title:document.querySelector('.download-info h2').textContent,progress:document.querySelector('progress').value};
+      document.querySelector('[data-download-action="pause"]').click();
+      for(let i=0;i<50&&!document.querySelector('[data-download-action="resume"]');i++)await new Promise(r=>setTimeout(r,20));
+      result.paused=!!document.querySelector('[data-download-action="resume"]');
+      return result;
+    })()`);
+    assert.equal(downloadUI.title, 'Fixture import'); assert.equal(downloadUI.progress, 50); assert.equal(downloadUI.paused, true);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await fs.mkdir(path.join(__dirname, '../research/playzip/screenshots'), { recursive: true });
+    await fs.writeFile(path.join(__dirname, '../research/playzip/screenshots/downloads.png'), (await win.webContents.capturePage()).toPNG());
+    assert.deepEqual(errors, []);
+    console.log('Electron smoke test passed:', JSON.stringify(result));
+    console.log('Catalogue UI test passed:', JSON.stringify(catalogue));
+    console.log('Downloads UI test passed:', JSON.stringify(downloadUI));
+    app.exit(0);
+  } catch (error) { console.error(error); app.exit(1); }
+});

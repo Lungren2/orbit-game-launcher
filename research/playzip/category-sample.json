@@ -1,0 +1,219 @@
+{
+  "source": "playzip-html",
+  "url": "https://playzip.com/category/indie?page=2&sort=latest&l=english",
+  "page": 2,
+  "totalPages": 13,
+  "count": 30,
+  "games": [
+    {
+      "id": 3532,
+      "url": "https://playzip.com/game/3532",
+      "name": "Peaks of Yore",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2236070/library_600x900_2x.jpg",
+      "steamAppId": 2236070
+    },
+    {
+      "id": 2241,
+      "url": "https://playzip.com/game/2241",
+      "name": "Monsters are Coming! Rock & Road",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2934220/ff9ceac7d367945af5d369f8dbe3c26fe5ebfead/library_600x900_2x.jpg",
+      "steamAppId": 2934220
+    },
+    {
+      "id": 611,
+      "url": "https://playzip.com/game/611",
+      "name": "BattleBlock Theater",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/238460/library_600x900_2x.jpg",
+      "steamAppId": 238460
+    },
+    {
+      "id": 3518,
+      "url": "https://playzip.com/game/3518",
+      "name": "Eslabong",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/4560660/e17b906fcffe7dca676bd0dc10ecfe812684d977/library_capsule_2x.jpg",
+      "steamAppId": 4560660
+    },
+    {
+      "id": 2459,
+      "url": "https://playzip.com/game/2459",
+      "name": "Mewgenics",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/686060/ea77c084fe08e1654380778ef73f613185e7a6ca/library_600x900_2x.jpg",
+      "steamAppId": 686060
+    },
+    {
+      "id": 3506,
+      "url": "https://playzip.com/game/3506",
+      "name": "Ratropolis",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1108370/library_600x900_2x.jpg",
+      "steamAppId": 1108370
+    },
+    {
+      "id": 2990,
+      "url": "https://playzip.com/game/2990",
+      "name": "万词破 - 单词女友",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1981560/7c581cdd1d62a9204109e073b57fbde7b15369f7/library_capsule_2x.jpg",
+      "steamAppId": 1981560
+    },
+    {
+      "id": 1291,
+      "url": "https://playzip.com/game/1291",
+      "name": "Hero Siege",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/269210/library_600x900_2x.jpg",
+      "steamAppId": 269210
+    },
+    {
+      "id": 3492,
+      "url": "https://playzip.com/game/3492",
+      "name": "Alice's Gaze",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/4529120/3f78bd8b996f92b17c3893dbeaaac38346959048/library_capsule_2x.jpg",
+      "steamAppId": 4529120
+    },
+    {
+      "id": 3330,
+      "url": "https://playzip.com/game/3330",
+      "name": "Carpet Cleaning Simulator",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/4634560/c277d632cd245946545d2f04d34e29814905e125/library_capsule_2x.jpg",
+      "steamAppId": 4634560
+    },
+    {
+      "id": 3478,
+      "url": "https://playzip.com/game/3478",
+      "name": "HOLY GRAIL for DUMMIES",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/4435720/0683817720a12ca4b97ba1bc368ce5e4f1328d08/library_capsule_2x.jpg",
+      "steamAppId": 4435720
+    },
+    {
+      "id": 2414,
+      "url": "https://playzip.com/game/2414",
+      "name": "Spellmasons",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1618380/7bc6459a004a8a7bd4dccec7edbee8ac56b3ab5f/library_600x900_2x.jpg",
+      "steamAppId": 1618380
+    },
+    {
+      "id": 3469,
+      "url": "https://playzip.com/game/3469",
+      "name": "VHOLUME",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/4131730/6a6388781f92a1ca092017caa4e3cb7a06415e5b/library_capsule_2x.jpg",
+      "steamAppId": 4131730
+    },
+    {
+      "id": 3433,
+      "url": "https://playzip.com/game/3433",
+      "name": "Snowed Under",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/4938200/6e7ce30fad19b20d21019af8538400f36bf937d5/library_capsule_2x.jpg",
+      "steamAppId": 4938200
+    },
+    {
+      "id": 2582,
+      "url": "https://playzip.com/game/2582",
+      "name": "Word Game World",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3114370/d73f764da80db6be29e21b89ed89312987af775c/library_600x900_2x.jpg",
+      "steamAppId": 3114370
+    },
+    {
+      "id": 3150,
+      "url": "https://playzip.com/game/3150",
+      "name": "Escape from Yandere",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/4081840/e99fddabed4daf4f112612c7ca1df90c3165e0ec/library_capsule_2x.jpg",
+      "steamAppId": 4081840
+    },
+    {
+      "id": 3416,
+      "url": "https://playzip.com/game/3416",
+      "name": "Database Detective: Minor Crimes Division",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3950130/ed3cd457aec6ffe5293489e568f1f226e8860e46/library_capsule_2x.jpg",
+      "steamAppId": 3950130
+    },
+    {
+      "id": 1419,
+      "url": "https://playzip.com/game/1419",
+      "name": "Space Engineers 2",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1133870/library_600x900_2x.jpg",
+      "steamAppId": 1133870
+    },
+    {
+      "id": 3447,
+      "url": "https://playzip.com/game/3447",
+      "name": "The Legend of Bum-Bo",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1148650/library_600x900_2x.jpg",
+      "steamAppId": 1148650
+    },
+    {
+      "id": 2351,
+      "url": "https://playzip.com/game/2351",
+      "name": "Bio Goddess: Doomsday Begins",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2806120/library_600x900_2x.jpg",
+      "steamAppId": 2806120
+    },
+    {
+      "id": 3044,
+      "url": "https://playzip.com/game/3044",
+      "name": "Turbo Dismount 2",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2280350/library_600x900_2x.jpg",
+      "steamAppId": 2280350
+    },
+    {
+      "id": 3434,
+      "url": "https://playzip.com/game/3434",
+      "name": "Contagion",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/238430/library_600x900_2x.jpg",
+      "steamAppId": 238430
+    },
+    {
+      "id": 3427,
+      "url": "https://playzip.com/game/3427",
+      "name": "Execute",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3829620/19f857ff229b0de3be1c65fd00be3135f7bcdeb8/library_capsule_2x.jpg",
+      "steamAppId": 3829620
+    },
+    {
+      "id": 3381,
+      "url": "https://playzip.com/game/3381",
+      "name": "Spiritstead",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3501540/bd9b7fda7b1a482bdd735a9fb455593be69d6836/library_capsule_2x.jpg",
+      "steamAppId": 3501540
+    },
+    {
+      "id": 3393,
+      "url": "https://playzip.com/game/3393",
+      "name": "Sovereign Tower",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/4113940/7a0f402ecc3f2af5e1be623d6b0be4eaced604a9/library_capsule_2x.jpg",
+      "steamAppId": 4113940
+    },
+    {
+      "id": 2958,
+      "url": "https://playzip.com/game/2958",
+      "name": "Cheap Car Repair",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2904040/1f004c8b5d2499e6f54d4ccb56c78309fba26ab6/library_600x900_2x.jpg",
+      "steamAppId": 2904040
+    },
+    {
+      "id": 1767,
+      "url": "https://playzip.com/game/1767",
+      "name": "Void War",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2853590/library_600x900_2x.jpg",
+      "steamAppId": 2853590
+    },
+    {
+      "id": 3400,
+      "url": "https://playzip.com/game/3400",
+      "name": "Night Raider",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2719290/library_600x900_2x.jpg",
+      "steamAppId": 2719290
+    },
+    {
+      "id": 3391,
+      "url": "https://playzip.com/game/3391",
+      "name": "UnderMine 2",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1869780/library_600x900_2x.jpg",
+      "steamAppId": 1869780
+    },
+    {
+      "id": 961,
+      "url": "https://playzip.com/game/961",
+      "name": "Travellers Rest",
+      "coverUrl": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1139980/library_600x900_2x.jpg",
+      "steamAppId": 1139980
+    }
+  ]
+}

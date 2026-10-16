@@ -1,0 +1,10 @@
+{
+  "Cities Skylines II": { "file": "cities", "title": "Main Menu" },
+  "Dimraeth": { "file": "dimraeth", "title": "Dimraeth Menu" },
+  "Fortnite": { "file": "fortnite", "title": "Enter Lobby" },
+  "Scritchy Scratchy": { "file": "scritchy", "title": "Catalog 1" },
+  "Stardew Valley": { "file": "stardew", "title": "Stardew Valley Overture" },
+  "Vampire Survivors": { "file": "vampire", "title": "Vampire Survivors Main Theme" },
+  "Wanderburg": { "file": "wanderburg", "title": "Nur eine Burg" },
+  "The Walking Dead TTDS": { "file": "walking-dead", "title": "Clementine's Suite" }
+}
