@@ -5,7 +5,6 @@ import { createThemeMusic } from './theme-music.js';
 import { createGameSetup } from './game-setup.js';
 
 const icons = {
-  orbit: '<circle cx="12" cy="12" r="5"/><ellipse cx="12" cy="12" rx="11" ry="4" transform="rotate(-35 12 12)"/>',
   search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/>',
   settings: '<path d="m9 3-.6 2.1-2 .9-2-.5-2 3.5 1.5 1.6v2.8L2.4 15l2 3.5 2-.5 2 .9L9 21h4l.6-2.1 2-.9 2 .5 2-3.5-1.5-1.6v-2.8L19.6 9l-2-3.5-2 .5-2-.9L13 3Z"/><circle cx="11" cy="12" r="3"/>',
   grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
@@ -24,6 +23,7 @@ const icons = {
 const icon = (name, cls = '') => `<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.grid}</svg>`;
 const esc = (v = '') => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const desktop = Boolean(window.orbit);
+document.documentElement.classList.toggle('desktop', desktop);
 const hasArt = g => Boolean(g.art || g.hasCover || g.hasHero || g.coverUrl);
 const art = (g, type = 'hero') => {
   const kind = ['hero','logo'].includes(type) ? type : 'cover';
@@ -42,7 +42,7 @@ document.querySelector('#app').innerHTML = `
   <div class="backdrop" aria-hidden="true"><div class="wallpaper"></div><div class="vignette"></div><div class="grain"></div></div>
   <div class="shell">
     <header>
-      <a class="brand" href="#" aria-label="Orbit home">${icon('orbit')}</a>
+      <a class="brand" href="#" aria-label="Orbit home"><img class="brand-mark" src="./brand/orbit-mark.svg" alt="" draggable="false"></a>
       <nav aria-label="Main"><button class="nav-item active" data-view="games">Games</button><button class="nav-item" data-view="library">Library</button><button class="nav-item" data-view="catalogue">Catalogue</button></nav>
       <div class="utilities"><button class="icon-button downloads-button" id="downloads-button" aria-label="Downloads" title="Downloads">${icon('download')}<span id="downloads-count" hidden></span></button><button class="icon-button" id="search-button" aria-label="Search" title="Search">${icon('search')}</button><button class="icon-button" id="settings-button" aria-label="Settings" title="Settings">${icon('settings')}</button></div>
     </header>

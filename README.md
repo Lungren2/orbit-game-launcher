@@ -4,6 +4,10 @@ A PS5-inspired Electron launcher for `D:\Games`. Game artwork fills the screen, 
 
 Double-click `Launch Orbit.cmd`, or open `release\Orbit\Orbit.exe` after packaging. Keep the entire `release\Orbit` folder together when moving the app. The packaged app runs without Node.js. Games and Library work offline; the PlayZip catalogue requires an internet connection.
 
+The header doubles as the window title bar. Drag its empty space to move the window, or double-click to maximize and restore. Native minimize, maximize, and close controls sit over the artwork and retain Windows Snap layouts. Navigation and utility buttons remain clickable. F11 switches to fullscreen.
+
+The Orbit mark lives in `public/brand/orbit-mark.svg`, with its app tile in `public/favicon.svg`. Building generates PNG and multi-resolution ICO assets. Packaging applies the icon and Orbit product information to `Orbit.exe`.
+
 ## Development
 
 Requires Node.js 22 or later on Windows.
@@ -23,7 +27,9 @@ npm run smoke
 npm run package
 ```
 
-The smoke check loads the production UI in a hidden, sandboxed Electron window and checks the preload bridge, game detection, artwork, launch error feedback, and the catalogue UI with saved HTML fixtures. It checks pagination, search, iframe creation and removal, and catalogue errors. It intercepts launches, so it does not start a game. It expects the five games currently in `D:\Games`.
+The smoke check loads the production UI in a hidden, sandboxed Electron window and checks the preload bridge, game detection, artwork, launch error feedback, and catalogue UI using the tracked catalogue samples. It checks pagination, search, iframe creation and removal, catalogue errors, and title-bar spacing at 900 and 1280 pixels. It intercepts launches, so it does not start a game. It needs at least one installed game in `D:\Games`.
+
+To also exercise native maximize, fullscreen, minimize, and restore in a visible window, run `$env:ORBIT_WINDOW_CHECK = '1'; npm run smoke` in PowerShell. Remove the variable afterward with `Remove-Item Env:ORBIT_WINDOW_CHECK`.
 
 ## Controls
 

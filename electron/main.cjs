@@ -7,6 +7,7 @@ const { fetchCatalogue } = require('./catalogue.cjs');
 const { DownloadManager } = require('./downloads.cjs');
 const metadata = require('./metadata.cjs');
 const bundledThemes = require('./themes.json');
+const { windowOptions } = require('./window.cjs');
 let win, library, downloads, quitting = false, state = { root: 'D:\\Games', favorites: [], recent: {}, executables: {}, autoMetadata: true };
 const configured = new Set();
 let configuring = false;
@@ -66,7 +67,9 @@ const attempt = (handler) => async (event, ...args) => {
 
 app.whenReady().then(async () => {
   try { state = { ...state, ...JSON.parse(await fs.readFile(path.join(app.getPath('userData'), 'library.json'), 'utf8')) }; } catch {}
-  win = new BrowserWindow({ width: 1440, height: 940, minWidth: 900, minHeight: 650, title: 'Orbit', backgroundColor: '#080e18', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), autoplayPolicy: 'no-user-gesture-required', contextIsolation: true, nodeIntegration: false, sandbox: true } });
+  app.setAppUserModelId('Orbit.Launcher');
+  win = new BrowserWindow(windowOptions());
+  win.removeMenu();
   const appUrl = pathToFileURL(path.join(__dirname, '../dist/index.html')).href;
   win.webContents.on('will-navigate', (event, url) => { if (url !== appUrl) event.preventDefault(); });
   downloads = new DownloadManager({ session: win.webContents.session, contents: win.webContents, getRoot: () => state.root, dataDirectory: app.getPath('userData') });

@@ -978,9 +978,10 @@ body[data-art="stardew"] .wallpaper {
   background-position: 100% center;
 }
 .shell {
+  --gutter: clamp(32px, 5.3vw, 112px);
   height: 100dvh;
   min-height: 600px;
-  padding: 0 clamp(32px, 5.3vw, 112px);
+  padding: 0 var(--gutter);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -998,10 +999,28 @@ header {
   align-items: center;
   opacity: 0.85;
 }
-.brand .icon {
-  width: 35px;
-  height: 35px;
-  stroke-width: 1.2;
+.brand-mark {
+  width: 40px;
+  height: 40px;
+  display: block;
+}
+.brand:hover {
+  opacity: 1;
+}
+.desktop header {
+  height: 88px;
+  margin: 0 calc(-1 * var(--gutter));
+  padding-left: var(--gutter);
+  padding-right: max(24px, calc(100vw - env(titlebar-area-width, calc(100vw - 138px)) + 20px));
+  -webkit-app-region: drag;
+  user-select: none;
+}
+.desktop header a,
+.desktop header button {
+  -webkit-app-region: no-drag;
+}
+.desktop:has(dialog[open]) header {
+  -webkit-app-region: no-drag;
 }
 .utilities {
   margin-left: auto;
