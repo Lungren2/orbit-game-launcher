@@ -6,6 +6,7 @@ const { scanLibrary, artworkPath } = require('../electron/library.cjs');
 const { pathToFileURL } = require('node:url');
 const fs = require('node:fs/promises');
 const { windowOptions } = require('../electron/window.cjs');
+app.setPath('userData', path.join(app.getPath('temp'), `orbit-smoke-${process.pid}`));
 protocol.registerSchemesAsPrivileged([{ scheme: 'orbit-art', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }]);
 app.whenReady().then(async () => {
   const library = await scanLibrary('D:\\Games');
@@ -40,7 +41,7 @@ app.whenReady().then(async () => {
       const data = await window.orbit.library();
       const initial = { bridge: !!window.orbit, games: data.data.games.length, tiles: document.querySelectorAll('.game-tile').length, nodeIsolated: typeof require === 'undefined', brokenImages: [...document.images].filter(i => !i.naturalWidth).map(i => i.src), play: !!document.querySelector('#play') };
       document.querySelector('#play').click();
-      await new Promise(r => setTimeout(r, 100));
+      for (let i = 0; i < 240 && !document.querySelector('.toast').textContent.includes('launch intercepted'); i++) await new Promise(r => setTimeout(r, 25));
       initial.launchError = document.querySelector('.toast').textContent;
       return initial;
     })()`);

@@ -3,6 +3,8 @@ import { createCatalogue } from './catalogue.js';
 import { createDownloads } from './downloads.js';
 import { createThemeMusic } from './theme-music.js';
 import { createGameSetup } from './game-setup.js';
+import { createAppearance, homeColumns, homeTileSize } from './appearance.js';
+import { launchVortex } from './launch-vortex.js';
 
 const icons = {
   search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/>',
@@ -35,15 +37,15 @@ const art = (g, type = 'hero') => {
   return kind === 'hero' ? g.heroUrl || g.coverUrl || '' : g.coverUrl || '';
 };
 let library = { games: [], root: 'D:\\Games', favorites: [], recent: {}, executables: {} };
-let selectedId, view = 'games', filter = 'all', query = '', busy = false, loadError = '';
+let selectedId, view = 'games', filter = 'all', query = '', homeQuery = '', busy = false, loadError = '';
 let toastTimer, lastFocus;
 
 document.querySelector('#app').innerHTML = `
-  <div class="backdrop" aria-hidden="true"><div class="wallpaper"></div><div class="vignette"></div><div class="grain"></div></div>
+  <div class="backdrop" aria-hidden="true"><div class="wallpaper"></div><div class="jungle-scene"><video class="jungle-video" muted loop playsinline preload="none" poster="./themes/jungle-source.png"></video><div class="jungle-light"></div><div class="jungle-mist"></div><div class="jungle-motes">${Array.from({length:9},(_,i)=>`<i style="--mote:${i}"></i>`).join('')}</div></div><div class="vignette"></div><div class="grain"></div></div>
   <div class="shell">
     <header>
       <a class="brand" href="#" aria-label="Orbit home"><img class="brand-mark" src="./brand/orbit-mark.svg" alt="" draggable="false"></a>
-      <nav aria-label="Main"><button class="nav-item active" data-view="games">Games</button><button class="nav-item" data-view="library">Library</button><button class="nav-item" data-view="catalogue">Catalogue</button></nav>
+      <nav aria-label="Main"><button class="nav-item active" data-view="games">Home</button><button class="nav-item" data-view="library">Library</button><button class="nav-item" data-view="catalogue">Catalogue</button></nav>
       <div class="utilities"><button class="icon-button downloads-button" id="downloads-button" aria-label="Downloads" title="Downloads">${icon('download')}<span id="downloads-count" hidden></span></button><button class="icon-button" id="search-button" aria-label="Search" title="Search">${icon('search')}</button><button class="icon-button" id="settings-button" aria-label="Settings" title="Settings">${icon('settings')}</button></div>
     </header>
     <main id="main"></main>
@@ -51,6 +53,7 @@ document.querySelector('#app').innerHTML = `
   <dialog id="dialog"></dialog><div class="toast" role="status" aria-live="polite"></div>
   <div class="theme-player" hidden><button class="icon-button" id="theme-mute" aria-label="Mute theme music"></button><div class="theme-track"><span class="theme-caption">Game theme</span><span id="theme-title"></span></div><input id="theme-volume" type="range" min="0" max="100" aria-label="Theme music volume"></div>`;
 
+const appearance = createAppearance();
 const music = createThemeMusic({ onChange: state => {
   document.querySelector('.theme-player').hidden = !state.theme || view !== 'games';
   const button = document.querySelector('#theme-mute');
@@ -69,8 +72,8 @@ document.querySelector('#theme-mute').onclick = () => {
 };
 document.querySelector('#theme-volume').oninput = event => music.setVolume(Number(event.target.value) / 100);
 document.addEventListener('pointerdown', () => music.retry());
-document.addEventListener('visibilitychange', () => music.select(current(), view === 'games' && !document.hidden));
-window.addEventListener('pagehide', () => music.dispose());
+document.addEventListener('visibilitychange', () => { music.select(current(), view === 'games' && !document.hidden); appearance.refresh(); });
+window.addEventListener('pagehide', () => { music.dispose(); appearance.dispose(); });
 
 async function request(name, ...args) {
   const result = await window.orbit[name](...args);
@@ -87,6 +90,7 @@ function filtered() {
   return library.games.filter(g => (!query || g.name.toLowerCase().includes(query.toLowerCase())) && (filter !== 'favorites' || library.favorites.includes(g.id)) && (filter !== 'recent' || library.recent[g.id])).sort((a, b) => filter === 'recent' ? new Date(library.recent[b.id]) - new Date(library.recent[a.id]) : 0);
 }
 function select(id, focus = false) {
+  if (busy) return;
   selectedId = id;
   render();
   if (focus) document.querySelector(`.game-tile[data-id="${id}"]`)?.focus({ preventScroll: true });
@@ -115,21 +119,29 @@ function render() {
     return;
   }
   if (view === 'games') {
+    const homeGames = library.games.filter(g => g.name.toLowerCase().includes(homeQuery.toLowerCase()));
+    const columns = homeColumns(homeGames.length, innerWidth);
     main.innerHTML = `
-      <section class="game-rail" aria-label="Games">${library.games.map(g => `
+      <div class="home-toolbar"><div><span class="home-eyebrow">YOUR NEXT ADVENTURE</span><h2>Your library <span>${library.games.length} games</span></h2></div><label class="home-search">${icon('search')}<input id="home-search" type="search" placeholder="Find a game" aria-label="Search your library" value="${esc(homeQuery)}"></label></div>
+      <section class="game-rail" aria-label="Games" style="--home-columns:${columns}">${homeGames.map(g => `
         <button class="game-tile ${g.id === selectedId ? 'selected' : ''}" data-id="${g.id}" aria-label="${esc(g.name)}" aria-pressed="${g.id === selectedId}" title="${esc(g.name)}">
-          <div class="tile-art" data-art="${esc(g.art || 'default')}">${hasArt(g) ? `<img src="${art(g, 'cover')}" alt="" draggable="false">` : ''}<span class="fallback-name">${esc(g.name)}</span></div>
+          <div class="tile-art" data-art="${esc(g.art || 'default')}">${hasArt(g) ? `<img src="${art(g, 'cover')}" alt="" draggable="false">` : ''}<span class="fallback-name">${esc(g.name)}</span></div><span class="home-tile-label">${esc(g.name)}</span>
         </button>`).join('')}
-      </section>
+      ${homeGames.length ? '' : '<p class="home-no-results">No matching games</p>'}</section>
       <section class="game-hero" aria-label="Selected game">
-        <div class="hero-copy" key="${game.id}">
+        <div class="hero-copy" key="${game.id}"><span class="home-selected-label">READY TO PLAY</span>
           ${game.hasLogo || game.art && game.art !== 'scritchy' && game.art !== 'cities' ? `<img class="game-logo" src="${art(game,'logo')}" alt="${esc(game.name)}"><h1 class="game-title logo-fallback ${esc(game.art || '')}">${esc(game.name)}</h1>` : `<h1 class="game-title ${esc(game.art || '')}">${game.art === 'cities' ? 'CITIES<span class="city-subtitle">SKYLINES II</span>' : esc(game.name)}</h1>`}
-          <div class="hero-actions"><button class="play-button" id="play" ${busy || !game.executable && !library.executables[game.id] ? 'disabled' : ''}>${icon('play')}<span>${busy ? 'Starting' : 'Play'}</span></button><button class="icon-button game-menu" id="details" aria-label="Game details" title="Game details">${icon('more')}</button></div>
+          <p class="home-game-description">${esc(game.description || `${game.genre}${game.developer ? ` · ${game.developer}` : ''}`)}</p><div class="hero-actions"><button class="play-button" id="play" ${busy || !game.executable && !library.executables[game.id] ? 'disabled' : ''}>${icon('play')}<span>${busy ? 'Starting' : 'Play'}</span></button><button class="icon-button game-menu" id="details" aria-label="Game details" title="Game details">${icon('more')}</button></div>
         </div>
       </section>`;
     main.querySelectorAll('.game-tile').forEach(el => el.onclick = () => select(el.dataset.id));
+    const rail = main.querySelector('.game-rail');
+    const railStyle = getComputedStyle(rail);
+    const fitted = homeTileSize(homeGames.length, columns, rail.clientWidth - parseFloat(railStyle.paddingLeft) - parseFloat(railStyle.paddingRight), rail.clientHeight - parseFloat(railStyle.paddingTop) - parseFloat(railStyle.paddingBottom), parseFloat(railStyle.columnGap));
+    rail.style.setProperty('--fitted-tile', `${fitted}px`);
     main.querySelector('#play').onclick = play;
     main.querySelector('#details').onclick = details;
+    main.querySelector('#home-search').oninput = event => { const position = event.target.selectionStart; homeQuery = event.target.value; render(); const input = main.querySelector('#home-search'); input.focus(); try { input.setSelectionRange(position,position); } catch {} };
     // Logos are optional. Hide the fallback title only after the actual image has loaded.
     const logo = main.querySelector('.game-logo');
     if (logo) { logo.onload = () => { logo.classList.add('loaded'); main.querySelector('.logo-fallback').hidden = true; }; }
@@ -145,7 +157,7 @@ function render() {
     };
   }
 }
-function setView(next) { view = next; render(); }
+function setView(next) { if (busy) return; view = next; render(); }
 async function load() {
   try {
     let data;
@@ -166,9 +178,11 @@ async function play() {
   const game = current(); if (!game || busy) return;
   music.suspend();
   busy = true; render();
-  try { const result = await request('launch', game.id); library.recent = result.recent; toast(`Starting ${game.name}`); }
+  appearance.suspend(true);
+  let scene;
+  try { scene = await launchVortex({game,art,games:library.games,enabled:appearance.state().launchVortex}); const result = await request('launch', game.id); library.recent = result.recent; toast(`Starting ${game.name}`); }
   catch (error) { music.resume(); toast(error.message); }
-  finally { busy = false; render(); }
+  finally { scene?.close(); appearance.suspend(false); busy = false; render(); }
 }
 async function favorite() {
   const id = selectedId;
@@ -250,6 +264,11 @@ function settings() {
   auto.innerHTML = `<input type="checkbox" id="auto-game-setup" ${library.autoMetadata !== false ? 'checked' : ''}><span>Automatically fill missing artwork and game details</span>`;
   dialog.querySelector('.dialog-actions').prepend(auto);
   auto.querySelector('input').onchange = event => desktopAction(async () => { library.autoMetadata = await request('setAutoMetadata', event.target.checked); });
+  const modes = document.createElement('section'); modes.className = 'appearance-settings';
+  modes.innerHTML = `<div class="appearance-preview"><img src="./themes/jungle-source.png" alt="Jungle mode preview"><div><strong>Jungle mode</strong><span>A living 4K rainforest</span></div></div><label class="appearance-toggle"><span>Jungle background</span><input id="jungle-mode" type="checkbox" ${appearance.state().jungle ? 'checked' : ''} role="switch"></label><label class="appearance-toggle"><span>Vortex launch animation</span><input id="vortex-mode" type="checkbox" ${appearance.state().launchVortex ? 'checked' : ''} role="switch"></label><p>Motion pauses when Orbit is hidden and follows your system’s reduced-motion preference.</p>`;
+  dialog.querySelector('.dialog-header').after(modes);
+  modes.querySelector('#jungle-mode').onchange = event => appearance.set('jungle',event.target.checked);
+  modes.querySelector('#vortex-mode').onchange = event => appearance.set('launchVortex',event.target.checked);
 }
 async function fullscreen() {
   try {
@@ -270,11 +289,14 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && view !== 'games') { e.preventDefault(); query = ''; setView('games'); return; }
   if (/INPUT|TEXTAREA/.test(e.target.tagName)) return;
   if (e.key === '/') { e.preventDefault(); if (view === 'catalogue') catalogue.focusSearch(); else document.querySelector('#search-button').click(); }
-  if (view === 'games' && ['ArrowLeft','ArrowRight'].includes(e.key) && library.games.length) {
+  if (view === 'games' && ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key) && library.games.length) {
     e.preventDefault();
-    const index = library.games.findIndex(g => g.id === selectedId);
-    const next = (index + (e.key === 'ArrowRight' ? 1 : -1) + library.games.length) % library.games.length;
-    select(library.games[next].id, true);
+    const visibleGames = library.games.filter(g => g.name.toLowerCase().includes(homeQuery.toLowerCase()));
+    if (!visibleGames.length) return;
+    const index = visibleGames.findIndex(g => g.id === selectedId);
+    const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : homeColumns(visibleGames.length,innerWidth) * (e.key === 'ArrowDown' ? 1 : -1);
+    const next = index < 0 ? 0 : ((index + step) % visibleGames.length + visibleGames.length) % visibleGames.length;
+    select(visibleGames[next].id, true);
     document.querySelector('.game-tile.selected')?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
   }
   if (e.key === 'Enter' && view === 'games' && (e.target === document.body || e.target.classList.contains('game-tile'))) { e.preventDefault(); play(); }
@@ -286,3 +308,5 @@ if (desktop && window.orbit.onDownloads) {
   request('downloads').then(jobs => downloadsView.update(jobs)).catch(error => toast(error.message));
 }
 load();
+let resizeTimer;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (view === 'games' && !busy) render(); },120); });

@@ -1,6 +1,6 @@
 # Orbit
 
-A PS5-inspired Electron launcher for `D:\Games`. Game artwork fills the screen, with a compact game row and minimal controls.
+A desktop game launcher for `D:\Games`. Home shows the game library beside the selected game's artwork and controls. Tiles shrink as the library grows.
 
 [![Orbit walkthrough showing game selection and Library search](docs/media/orbit-demo.gif)](docs/media/orbit-demo.mp4)
 
@@ -28,10 +28,13 @@ If your npm configuration blocks Electron's install script, run `node node_modul
 ```powershell
 npm test
 npm run smoke
+npm run check:home
 npm run package
 ```
 
 The smoke check loads the production UI in a hidden, sandboxed Electron window and checks the preload bridge, game detection, artwork, launch error feedback, and catalogue UI using the tracked catalogue samples. It checks pagination, search, iframe creation and removal, catalogue errors, and title-bar spacing at 900 and 1280 pixels. It intercepts launches, so it does not start a game. It needs at least one installed game in `D:\Games`.
+
+`npm run check:home` checks 4K jungle playback, the saved off switch, a 24-game grid, a 4K viewport, and vortex completion before launching. Launches are intercepted. It saves screenshots and a JSON report under `research/playzip/screenshots`. The native checks use separate temporary profiles, so they preserve your app preferences.
 
 To also exercise native maximize, fullscreen, minimize, and restore in a visible window, run `$env:ORBIT_WINDOW_CHECK = '1'; npm run smoke` in PowerShell. Remove the variable afterward with `Remove-Item Env:ORBIT_WINDOW_CHECK`.
 
@@ -41,11 +44,11 @@ To also exercise native maximize, fullscreen, minimize, and restore in a visible
 
 | Key | Action |
 | --- | --- |
-| Left / Right | Select game |
+| Arrow keys | Select game in the Home grid |
 | Enter | Play selected game when a tile is focused |
 | / | Search |
 | F11 | Toggle fullscreen |
-| Escape | Close dialog or return to Games |
+| Escape | Close dialog or return to Home |
 
 Use the menu beside Play to favorite a game, open its folder, or choose its executable. Library has All, Favorites, and Recent filters. Recent tracks launches made through Orbit, not playtime or game progress. Settings lets you change the game folder, rescan, or view keyboard controls.
 
@@ -74,6 +77,12 @@ Transfer history is saved to `%APPDATA%\orbit-game-launcher\downloads.json`. Dow
 The importer validates archive paths, link entries, file counts, declared sizes, and free space before extraction, then checks the extracted tree. It bundles the unmodified 7-Zip Extra 26.04 console executable, with license and origin information under `vendor/7zip` and `resources/7zip` in packaged builds.
 
 The native end-to-end fixture check is `scripts/check-download-import.cjs`, run with Electron and `ELECTRON_RUN_AS_NODE` unset. It downloads a tiny local test ZIP through a sandboxed iframe, extracts it, checks executable detection and library metadata, and checks local artwork delivery. It never launches the fixture executable or downloads a real game.
+
+## Home appearance and launch animation
+
+Settings has separate switches for Jungle background and Vortex launch animation. Jungle mode plays a silent 3840 x 2160 rainforest loop with subtle drift. Turning it off restores the selected game's wallpaper and unloads the video. Motion pauses while Orbit is hidden and follows the system's reduced-motion preference.
+
+When Play is pressed, game covers orbit a blue-purple space vortex, spiral into its dark center, and vanish before Orbit starts the game. A launch failure returns to Home with an error message. Disabling the animation or enabling reduced motion skips the effect. Both switches are saved locally.
 
 ## Game theme music
 

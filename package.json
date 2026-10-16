@@ -10,6 +10,7 @@
     "build": "node scripts/brand.cjs && vite build",
     "start": "npm run build && node scripts/start.cjs",
     "smoke": "npm run build && node scripts/start.cjs --smoke",
+    "check:home": "npm run build && node scripts/check-home.cjs",
     "record:demo": "npm run build && node scripts/start.cjs --record-demo",
     "test": "node --test",
     "package": "npm run build && node scripts/package.cjs"
