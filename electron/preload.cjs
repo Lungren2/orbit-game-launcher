@@ -1,6 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('orbit', {
   library: () => ipcRenderer.invoke('library'),
+  openSteam: () => ipcRenderer.invoke('open-steam'),
+  openEpic: () => ipcRenderer.invoke('open-epic'),
+  openXbox: () => ipcRenderer.invoke('open-xbox'),
   searchMetadata: (id, query) => ipcRenderer.invoke('metadata-search', id, query),
   applyMetadata: (id, steamId) => ipcRenderer.invoke('metadata-apply', id, steamId),
   autoConfigure: id => ipcRenderer.invoke('metadata-auto', id),
@@ -10,6 +13,7 @@ contextBridge.exposeInMainWorld('orbit', {
   setAutoMetadata: enabled => ipcRenderer.invoke('auto-metadata', enabled),
   onLibraryUpdated: callback => { const listener = () => callback(); ipcRenderer.on('library-updated', listener); return () => ipcRenderer.removeListener('library-updated', listener); },
   catalogue: (options) => ipcRenderer.invoke('catalogue', options),
+  onCatalogueUpdated: callback => { const listener = (_,data) => callback(data); ipcRenderer.on('catalogue-updated',listener); return () => ipcRenderer.removeListener('catalogue-updated',listener); },
   downloads: () => ipcRenderer.invoke('downloads'),
   prepareDownload: game => ipcRenderer.invoke('prepare-download', game),
   endDownloadContext: token => ipcRenderer.invoke('end-download-context', token),
@@ -24,5 +28,6 @@ contextBridge.exposeInMainWorld('orbit', {
   chooseRoot: () => ipcRenderer.invoke('choose-root'),
   chooseExecutable: (id) => ipcRenderer.invoke('choose-executable', id),
   openFolder: (id) => ipcRenderer.invoke('open-folder', id),
+  uninstall: id => ipcRenderer.invoke('uninstall', id),
   fullscreen: () => ipcRenderer.invoke('fullscreen'),
 });

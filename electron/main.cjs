@@ -3,12 +3,14 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { scanLibrary, launchGame, artworkPath } = require('./library.cjs');
-const { fetchCatalogue } = require('./catalogue.cjs');
+const { CatalogueCache } = require('./catalogue-cache.cjs');
+const { CatalogueCovers, encodeCover, coverContentType } = require('./catalogue-covers.cjs');
 const { DownloadManager } = require('./downloads.cjs');
 const metadata = require('./metadata.cjs');
 const bundledThemes = require('./themes.json');
 const { windowOptions } = require('./window.cjs');
-let win, library, downloads, quitting = false, state = { root: 'D:\\Games', favorites: [], recent: {}, executables: {}, autoMetadata: true };
+const { removalTarget, uninstallUri } = require('./removal.cjs');
+let win, library, downloads, catalogue, covers, quitting = false, state = { root: 'D:\\Games', favorites: [], recent: {}, executables: {}, autoMetadata: true };
 const configured = new Set();
 let configuring = false;
 function scheduleConfiguration() {
@@ -29,7 +31,7 @@ function scheduleConfiguration() {
     } finally { configuring = false; scheduleConfiguration(); }
   });
 }
-protocol.registerSchemesAsPrivileged([{ scheme: 'orbit-art', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }]);
+protocol.registerSchemesAsPrivileged(['orbit-art','orbit-catalogue'].map(scheme=>({scheme,privileges:{standard:true,secure:true,supportFetchAPI:true,stream:true}})));
 let saving = Promise.resolve();
 const launching = new Set();
 if (!app.requestSingleInstanceLock()) { app.quit(); }
@@ -44,7 +46,7 @@ const save = () => {
   return saving;
 };
 async function getLibrary() {
-  library = await scanLibrary(state.root);
+  library = await scanLibrary(state.root, { platforms: true, cacheDirectory: app.getPath('userData') });
   for (const game of library.games) {
     const chosen = state.executables[game.id];
     if (chosen && !game.candidates.includes(chosen)) game.candidates.push(chosen);
@@ -69,6 +71,15 @@ app.whenReady().then(async () => {
   try { state = { ...state, ...JSON.parse(await fs.readFile(path.join(app.getPath('userData'), 'library.json'), 'utf8')) }; } catch {}
   app.setAppUserModelId('Orbit.Launcher');
   win = new BrowserWindow(windowOptions());
+  catalogue = new CatalogueCache({directory:path.join(app.getPath('userData'),'catalogue-cache')});
+  catalogue.on('warning',error=>console.warn('Catalogue cache:',error.message));
+  catalogue.on('updated',data=>{if(!win.isDestroyed())win.webContents.send('catalogue-updated',data);});
+  await catalogue.initialize();
+  covers = new CatalogueCovers({directory:path.join(catalogue.directory,'covers'),getGame:id=>catalogue.records.get(id),encode:encodeCover});
+  protocol.handle('orbit-catalogue',async request=>{
+    try {const url=new URL(request.url);if(url.hostname!=='cover')throw new Error('Invalid cover address.');const bytes=await covers.get(url.pathname.slice(1),true,url.searchParams.get('width'));return new Response(bytes,{headers:{'Content-Type':coverContentType(bytes),'Cache-Control':'public, max-age=86400'}});}
+    catch {return new Response('Cover not found',{status:404});}
+  });
   win.removeMenu();
   const appUrl = pathToFileURL(path.join(__dirname, '../dist/index.html')).href;
   win.webContents.on('will-navigate', (event, url) => { if (url !== appUrl) event.preventDefault(); });
@@ -84,6 +95,18 @@ app.whenReady().then(async () => {
   });
   win.webContents.session.setPermissionRequestHandler((_, __, callback) => callback(false));
   ipcMain.handle('library', attempt(getLibrary));
+  ipcMain.handle('open-steam', attempt(async () => {
+    try { await shell.openExternal('steam://open/games'); }
+    catch { throw new Error('Could not open Steam. Check that Steam is installed.'); }
+  }));
+  ipcMain.handle('open-epic', attempt(async () => {
+    try { await shell.openExternal('com.epicgames.launcher://'); }
+    catch { throw new Error('Could not open Epic Games Launcher. Check that Epic Games Launcher is installed.'); }
+  }));
+  ipcMain.handle('open-xbox', attempt(async () => {
+    try { await shell.openExternal('msxbox://'); }
+    catch { throw new Error('Could not open the Xbox app. Check that the Xbox app is installed.'); }
+  }));
   ipcMain.handle('metadata-search', attempt((id, query) => { gameById(id); return metadata.searchGames(query); }));
   ipcMain.handle('metadata-apply', attempt(async (id, steamId) => { const result = await metadata.applySteam(gameById(id), steamId, { replace: true }); await getLibrary(); return result; }));
   ipcMain.handle('metadata-auto', attempt(async id => { const game = gameById(id); const result = await metadata.autoConfigure(game, { bundledMusic: !!bundledThemes[path.basename(game.folder)], force: true }); await getLibrary(); return result; }));
@@ -97,11 +120,35 @@ app.whenReady().then(async () => {
     const result = await metadata.importMedia(game, kind, picked.filePaths[0]); await getLibrary(); return result;
   }));
   ipcMain.handle('auto-metadata', attempt(async enabled => { if (typeof enabled !== 'boolean') throw new Error('Invalid preference.'); state.autoMetadata = enabled; await save(); scheduleConfiguration(); return enabled; }));
-  ipcMain.handle('catalogue', attempt(fetchCatalogue));
+  ipcMain.handle('catalogue', attempt(async options=>{const page=await catalogue.get(options);covers.prefetch(page.games);return page;}));
   ipcMain.handle('downloads', attempt(() => downloads.snapshot()));
   ipcMain.handle('prepare-download', attempt(game => downloads.prepare(game)));
   ipcMain.handle('end-download-context', attempt(token => downloads.clear(token)));
-  ipcMain.handle('download-control', attempt((id, action) => downloads.control(id, action)));
+  ipcMain.handle('download-control', attempt(async (id, action) => {
+    if (action === 'delete') {
+      const job = downloads.jobs.find(job => job.id === id);
+      if (!job) throw new Error('Download not found.');
+      const answer = await dialog.showMessageBox(win, { type: 'warning', message: `Delete download for ${job.game.name}?`, detail: 'Removes staged files, unfinished installation files and transfer history. Installed games and your original imported archive are kept.', buttons: ['Cancel', 'Delete download'], defaultId: 0, cancelId: 0 });
+      if (answer.response !== 1) return downloads.snapshot();
+    }
+    return downloads.control(id, action);
+  }));
+  ipcMain.handle('uninstall', attempt(async id => {
+    const game = gameById(id);
+    if (launching.has(id)) throw new Error('Wait for the game to finish starting.');
+    const uri = uninstallUri(game);
+    if (uri) { await shell.openExternal(uri); return { external: true }; }
+    const folder = await removalTarget(state.root, game.folder);
+    const answer = await dialog.showMessageBox(win, { type: 'warning', message: `Uninstall ${game.name}?`, detail: `Moves the entire game folder to the Recycle Bin, including any saves stored inside it.\n${folder}`, buttons: ['Cancel', 'Uninstall'], defaultId: 0, cancelId: 0 });
+    if (answer.response !== 1) return { cancelled: true };
+    await shell.trashItem(await removalTarget(state.root, folder));
+    state.favorites = state.favorites.filter(value => value !== id);
+    delete state.recent[id]; delete state.executables[id];
+    for (const job of downloads.jobs) if (job.folder === game.folder || job.gameId === id) { job.status = 'cancelled'; job.message = 'Game uninstalled.'; }
+    downloads.changed(); await downloads.flush(); await save(); await getLibrary();
+    win.webContents.send('library-updated');
+    return { removed: true };
+  }));
   ipcMain.handle('add-archive', attempt(async game => {
     const result = await dialog.showOpenDialog(win, { title: 'Import game archive', filters: [{ name: 'Game archives', extensions: ['zip','7z'] }], properties: ['openFile'] });
     if (result.canceled) return null;
@@ -125,7 +172,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('launch', attempt(async id => {
     const game = gameById(id);
     if (launching.has(id)) throw new Error('This game is already starting.');
-    if (game.needsChoice && !state.executables[id]) throw new Error('Choose the executable in Game details before playing.');
+    if (!game.launchUri && !game.aumid && game.needsChoice && !state.executables[id]) throw new Error('Choose the executable in Game details before playing.');
     launching.add(id);
     try {
       const result = await launchGame(game, state.executables[id], undefined, uri => shell.openExternal(uri));
@@ -147,6 +194,7 @@ app.whenReady().then(async () => {
   }));
   async function chooseExecutable(id) {
     const game = gameById(id);
+    if (game.launchUri || game.aumid) throw new Error('This game is launched through its registered launcher.');
     const { canceled, filePaths } = await dialog.showOpenDialog(win, { title: `Choose executable for ${game.name}`, defaultPath: game.folder, filters: [{ name: 'Game executable', extensions: ['exe'] }], properties: ['openFile'] });
     if (canceled) return null;
     const exe = filePaths[0];
@@ -163,8 +211,9 @@ app.whenReady().then(async () => {
   }));
   ipcMain.handle('fullscreen', attempt(() => { win.setFullScreen(!win.isFullScreen()); return win.isFullScreen(); }));
   await win.loadURL(appUrl);
+  catalogue.start();
 });
 app.on('window-all-closed', () => app.quit());
 app.on('before-quit', event => {
-  if (downloads && !quitting) { event.preventDefault(); quitting = true; downloads.flush().catch(error => console.error('Download history:', error.message)).finally(() => app.quit()); }
+  if (downloads && !quitting) { event.preventDefault(); quitting = true; covers?.close(); Promise.allSettled([downloads.shutdown(),catalogue?.close()]).finally(() => app.quit()); }
 });

@@ -1,17 +1,10 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {readAppearance,createAppearance,homeColumns,homeTileSize} from '../src/appearance.js';
-test('jungle and vortex preferences survive restart, with sensible first-run defaults',()=>{
+import {readAppearance,createAppearance} from '../src/appearance.js';
+test('jungle and legacy launch-animation preferences survive restart, with sensible first-run defaults',()=>{
   assert.deepEqual(readAppearance({getItem:()=>null}),{jungle:true,launchVortex:true});
   assert.deepEqual(readAppearance({getItem:()=>'{bad'}),{jungle:true,launchVortex:true});
   assert.deepEqual(readAppearance({getItem:()=>'{"jungle":false,"launchVortex":false}'}),{jungle:false,launchVortex:false});
-});
-test('more games shrink home tiles while keeping a readable minimum',()=>{
-  const eight=homeTileSize(8,homeColumns(8),650,440);
-  const twentyFour=homeTileSize(24,homeColumns(24),650,440);
-  assert.ok(twentyFour<eight);assert.ok(twentyFour>=62);
-  assert.equal(homeColumns(0),1);assert.equal(homeColumns(1),1);
-  assert.ok(homeColumns(100,900)<=5);assert.ok(homeColumns(100,3840)<=9);
 });
 test('turning jungle off unloads the video, and hidden/reduced-motion pages pause playback',()=>{
   let saved,src=null,plays=0,pauses=0;

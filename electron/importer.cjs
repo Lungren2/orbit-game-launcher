@@ -145,7 +145,10 @@ function validateListing(listing, available = Number.MAX_SAFE_INTEGER) {
       parts.pop();
     }
   }
-  return { total, entries: records.length };
+  return { total, entries: records.length, files: records.map(record => ({
+    name: record.Path.replace(/\\/g, '/'), size: Number(record.Size || 0),
+    directory: record.Folder === '+' || /D/.test((record.Attributes || '').split(' ')[0]),
+  })) };
 }
 
 async function verifyTree(root) {
@@ -219,7 +222,18 @@ async function importArchive({
   game,
   onState = () => {},
   artwork = true,
+  spaceSaving = false,
 }) {
+  if (spaceSaving) {
+    try { return await require('./hatchzip.cjs').importManagedArchive(
+      { archive, root, game, onState, artwork },
+      { run7zip, validateListing, verifyTree, safeName, writeGameMetadata },
+    ); }
+    catch (error) {
+      if (!error.hatchzipUnsupported) throw error;
+      return { ...await importArchive({ archive, root, game, onState, artwork }), extractionEngine: '7zip' };
+    }
+  }
   const resolvedRoot = await fs.realpath(root);
   const staging = path.join(resolvedRoot, ".orbit-staging");
   await fs.mkdir(staging, { recursive: true });
@@ -297,8 +311,20 @@ async function importArchive({
         });
       }
     }
+    const manifest = await writeGameMetadata(destination, game, artwork);
+    await fs.unlink(path.join(destination, '.orbit-installing'));
+    return { folder: destination, manifest };
+  } catch (error) {
+    if (destination) error.message += ` Files are retained in ${destination}.`;
+    throw error;
+  } finally {
+    await removePrivate(work, staging).catch(() => {});
+  }
+}
+
+async function writeGameMetadata(destination, game, artwork, importId) {
     const assets = path.join(destination, ".orbit-assets");
-    await fs.mkdir(assets);
+    await fs.mkdir(assets, { recursive: true });
     const steamAppId =
       Number.isSafeInteger(game.steamAppId) && game.steamAppId > 0
         ? game.steamAppId
@@ -315,7 +341,7 @@ async function importArchive({
     const manifest = {
       version: 1,
       name: game.name,
-      playzipId: game.id,
+      playzipId: /^\d+$/.test(String(game.id)) && Number.isSafeInteger(Number(game.id)) && Number(game.id) > 0 ? String(Number(game.id)) : null,
       steamAppId,
       coverUrl: game.coverUrl || null,
       heroUrl,
@@ -323,19 +349,13 @@ async function importArchive({
       hasHero,
       genre: game.genre || "PC game",
       importedAt: new Date().toISOString(),
+      ...(importId ? { importId } : {}),
     };
     await fs.writeFile(
       path.join(destination, ".orbit-game.json"),
       JSON.stringify(manifest, null, 2),
     );
-    await fs.unlink(path.join(destination, ".orbit-installing"));
-    return { folder: destination, manifest };
-  } catch (error) {
-    if (destination) error.message += ` Files are retained in ${destination}.`;
-    throw error;
-  } finally {
-    await removePrivate(work, staging).catch(() => {});
-  }
+    return manifest;
 }
 module.exports = {
   importArchive,

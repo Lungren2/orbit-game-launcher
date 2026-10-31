@@ -38,6 +38,8 @@ app.whenReady().then(async () => {
     for (let i = 0; i < 300; i++) { if (manager.jobs[0] && ['ready','failed','needs-executable'].includes(manager.jobs[0].status)) break; await new Promise(r => setTimeout(r, 50)); }
     assert.equal(manager.jobs.length, 1);
     assert.equal(manager.jobs[0].status, 'ready', manager.jobs[0].message);
+    assert.equal(manager.jobs[0].extractionEngine, 'hatchzip');
+    await assert.rejects(fs.stat(manager.jobs[0].archive), { code: 'ENOENT' });
     const library = await scanLibrary(root);
     assert.equal(library.games.length, 1); assert.equal(library.games[0].name, 'Fixture');
     assert.equal(await fs.readFile(library.games[0].executable, 'utf8'), 'MZ-fixture-not-executable');
@@ -54,7 +56,7 @@ app.whenReady().then(async () => {
     const artworkWidth = await win.webContents.executeJavaScript(`(async()=>{await document.querySelector('img').decode();return document.querySelector('img').naturalWidth;})()`);
     assert.ok(artworkWidth > 0, 'Imported artwork loads through the local protocol');
     await manager.flush();
-    console.log('Native iframe download -> extraction -> library import passed:', JSON.stringify({ status: manager.jobs[0].status, filename: manager.jobs[0].filename, imported: library.games[0].name, candidateCount: library.games[0].candidates.length }));
+    console.log('Native iframe download -> extraction -> library import passed:', JSON.stringify({ status: manager.jobs[0].status, engine: manager.jobs[0].extractionEngine, filename: manager.jobs[0].filename, imported: library.games[0].name, candidateCount: library.games[0].candidates.length }));
     win.destroy(); server.close();
     const real = await fs.realpath(base); assert.ok(real.startsWith(await fs.realpath(os.tmpdir()) + path.sep)); await fs.rm(real, { recursive: true, force: true });
     app.exit(0);

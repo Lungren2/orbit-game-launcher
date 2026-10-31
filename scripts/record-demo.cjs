@@ -10,17 +10,19 @@ const { windowOptions } = require('../electron/window.cjs');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 protocol.registerSchemesAsPrivileged([{ scheme: 'orbit-art', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }]);
 app.commandLine.appendSwitch('force-device-scale-factor', '1');
+app.setPath('userData', path.join(app.getPath('temp'), `orbit-demo-${process.pid}`));
 
 app.whenReady().then(async () => {
-  let recording = false, pump, encoder;
+  let recording = false, pump, encoder, stage = 'startup';
   try {
     const directory = path.join(__dirname, '../docs/media');
     await fs.mkdir(directory, { recursive: true });
     const scratch = path.join(__dirname, '../research/playzip/recording-frames');
     await fs.mkdir(scratch, { recursive: true });
-    const library = await scanLibrary('D:\\Games');
+    const library = await scanLibrary('D:\\Games', { platforms:true, cacheDirectory:app.getPath('userData') });
     const options = windowOptions();
     const win = new BrowserWindow({ ...options, show: false, width: 1280, height: 800, webPreferences: { ...options.webPreferences, offscreen: true, backgroundThrottling: false } });
+    win.webContents.on('console-message',details=>{if(details.level==='error' || details.level===3)console.error('Demo renderer:',details.message);});
     win.webContents.setAudioMuted(true);
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     win.webContents.session.setPermissionRequestHandler((_, __, callback) => callback(false));
@@ -30,12 +32,15 @@ app.whenReady().then(async () => {
     });
     ipcMain.handle('library', () => ({ ok: true, data: { ...library, favorites: [], recent: {}, executables: {} } }));
     ipcMain.handle('downloads', () => ({ ok: true, data: [] }));
+    ipcMain.handle('catalogue', () => ({ ok:true,data:{html:'<div class="games_content"></div><div class="pagination"><a>1 / 1</a></div>',url:'https://playzip.com/'} }));
     const js = expression => win.webContents.executeJavaScript(expression);
-    const click = selector => js(`document.querySelector(${JSON.stringify(selector)}).click()`);
+    const click = selector => { stage=`click ${selector}`;return js(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e)throw Error('Missing demo control: '+${JSON.stringify(selector)});e.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0}));e.dispatchEvent(new MouseEvent('mouseup',{bubbles:true,button:0}));e.click();return true;})()`); };
     const wait = expression => js(`(async () => { for (let i=0;i<400;i++) { if (${expression}) return; await new Promise(r=>setTimeout(r,50)); } throw new Error('Demo page timed out'); })()`);
     await win.loadFile(path.join(__dirname, '../dist/index.html'));
     await wait("document.querySelectorAll('.game-tile').length > 0");
-    await js('Promise.all([...document.images].map(image => image.decode().catch(() => {})))');
+    const startingGame = library.games.find(game => game.art === 'cities') || library.games[0];
+    await click(`.game-tile[data-id="${startingGame.id}"]`);
+    await js('Promise.all([...document.querySelectorAll(".selected img")].map(image => image.decode().catch(() => {})))');
     await delay(800);
     encoder = spawn('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', '10', '-i', 'pipe:0', '-an', '-c:v', 'libx264', '-preset', 'fast', '-crf', '23', '-pix_fmt', 'yuv420p', path.join(scratch, 'demo-capture.mp4')], { windowsHide: true, stdio: ['pipe', 'ignore', 'pipe'] });
     let errors = '';
@@ -59,14 +64,18 @@ app.whenReady().then(async () => {
       const game = library.games.find(game => game.name === title);
       if (!game) continue;
       await click(`.game-tile[data-id="${game.id}"]`);
+      await js(`document.querySelector('.carousel-viewport').dispatchEvent(new PointerEvent('pointerover',{bubbles:true}))`);
       await delay(2200);
     }
-    await click('[data-view="library"]');
+    await click('[data-view="catalogue"]');
     await delay(2500);
-    await js(`const input=document.querySelector('#search');input.value='Stardew';input.dispatchEvent(new Event('input',{bubbles:true}));true`);
+    const focusedGame = library.games.find(game=>game.name==='Stardew Valley') || library.games[0];
+    await click(`[data-details-installed="${focusedGame.id}"]`);
     await delay(1800);
-    await click('.library-card');
-    await delay(2200);
+    await click('#close-dialog');
+    await delay(400);
+    await click('[data-view="games"]');
+    await delay(1200);
     const first = library.games.find(game => game.art === 'cities') || library.games[0];
     await click(`.game-tile[data-id="${first.id}"]`);
     await delay(2000);
@@ -86,7 +95,7 @@ app.whenReady().then(async () => {
     recording = false;
     if (pump) await pump.catch(() => {});
     if (encoder) encoder.kill();
-    console.error(error);
+    console.error(stage,error);
     app.exit(1);
   }
 });

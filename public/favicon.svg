@@ -1,11 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
   <defs>
     <linearGradient id="tile" x2="80" y2="80" gradientUnits="userSpaceOnUse"><stop stop-color="#233750"/><stop offset="1" stop-color="#0b1020"/></linearGradient>
-    <linearGradient id="orbit" x1="18" y1="58" x2="61" y2="20" gradientUnits="userSpaceOnUse"><stop stop-color="#80e7ff"/><stop offset=".52" stop-color="#d6dcff"/><stop offset="1" stop-color="#b3a0ff"/></linearGradient>
+    <linearGradient id="orbit" x1="20" y1="61" x2="58" y2="20" gradientUnits="userSpaceOnUse"><stop stop-color="#6caaff"/><stop offset=".55" stop-color="#a6e8ff"/><stop offset="1" stop-color="#f2fcff"/></linearGradient>
   </defs>
   <rect x="1" y="1" width="78" height="78" rx="20" fill="url(#tile)" stroke="#ffffff" stroke-opacity=".16"/>
-  <circle cx="40" cy="40" r="16" stroke="url(#orbit)" stroke-width="5"/>
-  <ellipse cx="40" cy="40" rx="29" ry="10" transform="rotate(-38 40 40)" stroke="url(#orbit)" stroke-width="3"/>
-  <path d="M20 55C29 55 49 40 59 26" stroke="#f1f5ff" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="59" cy="26" r="4" fill="#f1f5ff"/>
+  <path d="M51 20A23 23 0 1 0 63 42" stroke="url(#orbit)" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="62" cy="22" r="5.5" fill="#f2fcff"/>
 </svg>

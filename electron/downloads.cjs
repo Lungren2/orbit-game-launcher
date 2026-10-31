@@ -5,6 +5,7 @@ const { EventEmitter } = require("node:events");
 const { randomUUID } = require("node:crypto");
 const { importArchive, safeName } = require("./importer.cjs");
 const { scanLibrary } = require("./library.cjs");
+const { incompleteInstall } = require('./removal.cjs');
 
 function validateGame(game, origin = "https://playzip.com") {
   if (
@@ -301,6 +302,7 @@ class DownloadManager extends EventEmitter {
     });
     item.once("done", (_, state) => {
       this.items.delete(job.id);
+      if (job.status === 'cancelled') { this.changed(); return; }
       job.received = item.getReceivedBytes();
       if (state === "completed") {
         job.downloadComplete = true;
@@ -322,18 +324,25 @@ class DownloadManager extends EventEmitter {
     this.importTail = this.importTail
       .catch(() => {})
       .then(async () => {
-        if (job.status === "cancelled") return;
+        if (job.status === "cancelled" || !this.jobs.includes(job) || this.stopping) return;
+        this.activeImport = job.id;
         try {
+          // Make completion and job metadata durable before HatchZip can consume
+          // the staged archive, even for downloads that finish within 300 ms.
+          await this.persist();
+          if (this.stopping || job.status === "cancelled" || !this.jobs.includes(job)) return;
           const result = await this.importer({
             archive: job.archive,
             root: job.root,
             game: job.game,
+            spaceSaving: true,
             onState: (state) => {
               job.status = state;
               this.changed();
             },
           });
           job.folder = result.folder;
+          job.extractionEngine = result.extractionEngine || '7zip';
           const game = (await scanLibrary(job.root)).games.find(
             (game) => game.folder === result.folder,
           );
@@ -348,9 +357,9 @@ class DownloadManager extends EventEmitter {
               : "";
           this.emit("imported", { ...job });
         } catch (error) {
-          job.status = "failed";
-          job.message = error.message;
-        }
+          job.status = this.stopping ? "interrupted" : "failed";
+          job.message = this.stopping ? "Installation paused when Orbit closed. Retry installation to resume." : error.message;
+        } finally { this.activeImport = null; }
         this.changed();
         await this.persist();
       });
@@ -389,6 +398,30 @@ class DownloadManager extends EventEmitter {
     const job = this.jobs.find((job) => job.id === id);
     if (!job) throw new Error("Download not found.");
     const item = this.items.get(id);
+    if (action === 'delete') {
+      if (this.activeImport === id || ['extracting', 'importing'].includes(job.status)) throw new Error('Wait for installation to finish before deleting its download.');
+      const root = await fs.realpath(job.root);
+      const base = path.join(root, '.orbit-staging');
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(job.id) || path.resolve(path.dirname(job.archive)).toLowerCase() !== path.join(base, job.id).toLowerCase()) throw new Error('Invalid download directory.');
+      const staging = await fs.lstat(base).catch(error => { if (error.code !== 'ENOENT') throw error; });
+      if (staging && (staging.isSymbolicLink() || (await fs.realpath(base)).toLowerCase() !== base.toLowerCase())) throw new Error('Invalid staging directory.');
+      const directory = path.join(base, job.id);
+      const entry = await fs.lstat(directory).catch(error => { if (error.code !== 'ENOENT') throw error; });
+      if (entry && (entry.isSymbolicLink() || (await fs.realpath(directory)).toLowerCase() !== directory.toLowerCase())) throw new Error('Invalid download directory.');
+      const unfinished = entry && await incompleteInstall(job, directory);
+      if (this.activeImport === id || ['extracting', 'importing'].includes(job.status)) throw new Error('Wait for installation to finish before deleting its download.');
+      job.status = 'cancelled';
+      const liveItem = this.items.get(id);
+      if (liveItem) {
+        const stopped = new Promise(resolve => liveItem.once('done', resolve));
+        liveItem.cancel(); await stopped; this.items.delete(id);
+      }
+      if (unfinished) await fs.rm(unfinished, { recursive: true, force: true });
+      if (entry) await fs.rm(directory, { recursive: true, force: true });
+      this.jobs = this.jobs.filter(value => value !== job);
+      this.changed(); await this.flush();
+      return this.snapshot();
+    }
     if (action === "pause" && item && job.status === "downloading") {
       item.pause();
       job.status = "paused";
@@ -410,7 +443,10 @@ class DownloadManager extends EventEmitter {
       ["failed", "interrupted"].includes(job.status)
     ) {
       const base = await fs.realpath(path.join(job.root, ".orbit-staging"));
-      const archive = await fs.realpath(job.archive);
+      // HatchZip can consume the archive completely before metadata is published.
+      // Its private transaction remains sufficient to finish a retry.
+      const directory = await fs.realpath(path.dirname(job.archive));
+      const archive = path.join(directory, path.basename(job.archive));
       if (
         !archive.startsWith(base + path.sep) ||
         path.dirname(archive) !== path.join(base, job.id)
@@ -427,6 +463,12 @@ class DownloadManager extends EventEmitter {
       this.saveTimer = null;
     }
     await this.persist();
+  }
+  async shutdown() {
+    this.stopping = true;
+    await require('./hatchzip.cjs').stopHatchzip();
+    await this.importTail.catch(() => {});
+    await this.flush();
   }
 }
 module.exports = { DownloadManager, validateGame };

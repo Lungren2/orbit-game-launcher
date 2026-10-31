@@ -41,6 +41,14 @@ test('does not overwrite an existing game folder', async t => {
   assert.equal(path.basename(imported.folder), 'Fixture (2)');
   assert.equal(await fs.readFile(path.join(root, 'Fixture/keep.txt'), 'utf8'), 'preserved');
 });
+
+test('general archives do not persist the local sentinel as a catalogue identity', async t => {
+  const {root,archive}=await fixture(t);
+  const imported=await importArchive({archive,root,game:{id:'local',name:'Fixture'},artwork:false});
+  const metadata=JSON.parse(await fs.readFile(path.join(imported.folder,'.orbit-game.json'),'utf8'));
+  assert.equal(metadata.playzipId,null);
+  assert.equal((await scanLibrary(root)).games[0].playzipId,null);
+});
 test('rejects traversal, absolute paths, alternate streams, links, reserved names, and collisions', () => {
   for (const name of ['../evil.exe', 'C:\\evil.exe', '/evil', '\\\\server\\file', 'name:stream', 'CON.txt', 'folder./game.exe', '.orbit-game.json']) assert.throws(() => validateListing(`Path = ${name}\nSize = 1\nAttributes = A\n`));
   assert.throws(() => validateListing('Path = link\nSize = 1\nSymbolic Link = ../outside\n'), /links/);
