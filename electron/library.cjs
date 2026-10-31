@@ -27,7 +27,7 @@ async function findExecutables(folder, depth = 0) {
   return nested;
 }
 
-async function scanLibrary(root) {
+async function scanLibrary(root, { platforms = false, cacheDirectory, platformOptions } = {}) {
   const resolved = await fs.realpath(root);
   const dirs = (await fs.readdir(resolved, { withFileTypes: true })).filter(e => e.isDirectory() && !/^\.orbit-/i.test(e.name));
   const games = [];
@@ -50,7 +50,13 @@ async function scanLibrary(root) {
     const musicFile = /^music\.(mp3|ogg|wav|m4a|flac)$/.test(imported?.musicFile || '') ? imported.musicFile : null;
     games.push({ id: idFor(folder), name: gameName, folder, executable: candidates[0] || null, candidates, launchUri: meta.launchUri || null, needsChoice: candidates.length > 1 && !preferred, imported: !!imported, hasCover: !!imported?.hasCover, hasHero: !!imported?.hasHero, hasLogo: !!imported?.hasLogo, hasMusic: !!imported?.hasMusic && !!musicFile, musicFile, musicTitle: imported?.musicTitle || '', musicUrl: imported?.hasMusic && musicFile ? `orbit-art://${idFor(folder)}/music?v=${mediaVersion}` : null, mediaVersion, coverUrl: imported?.coverUrl || null, heroUrl: imported?.heroUrl || null, steamAppId: imported?.steamAppId || null, playzipId: imported?.playzipId || null, art: meta.art || null, genre: imported?.genre || meta.genre || 'PC game', developer: imported?.developer || meta.developer || '', description: imported?.description || meta.description || '', releaseDate: imported?.releaseDate || '', metadataSource: imported?.metadataSource || '', needsMetadataMatch: !!imported?.needsMetadataMatch });
   }
-  return { root: resolved, games: games.sort((a, b) => a.name.localeCompare(b.name)), scannedAt: new Date().toISOString() };
+  let warnings = [], combined = games;
+  if (platforms && cacheDirectory) {
+    const { scanPlatforms, mergeGames } = require('./platform-library.cjs');
+    const discovered = await scanPlatforms({ ...platformOptions, cacheDirectory });
+    combined = mergeGames(games, discovered.games); warnings = discovered.warnings;
+  }
+  return { root: resolved, games: combined.sort((a, b) => a.name.localeCompare(b.name)), warnings, scannedAt: new Date().toISOString() };
 }
 
 async function validatedExecutable(game, chosen) {
@@ -65,12 +71,24 @@ async function validatedExecutable(game, chosen) {
 }
 
 async function launchGame(game, chosen, spawnProcess = spawn, openExternal) {
-  const executable = await validatedExecutable(game, chosen);
-  if (game.launchUri) {
-    if (!openExternal) throw new Error('Launch Fortnite through Epic Games Launcher.');
-    await openExternal(game.launchUri);
-    return { launcher: 'Epic Games Launcher' };
+  if (game.aumid) {
+    if (!/^[\w.-]+_[\w]+![\w.-]+$/.test(game.aumid)) throw new Error('Xbox game registration is invalid. Rescan your library.');
+    await fs.access(game.platformFolder || game.folder);
+    return new Promise((resolve, reject) => {
+      const child = spawnProcess(path.join(process.env.SystemRoot || 'C:\\Windows', 'explorer.exe'), [`shell:AppsFolder\\${game.aumid}`], { detached: true, stdio: 'ignore', shell: false, windowsHide: true });
+      child.once('error', reject); child.once('spawn', () => { child.unref(); resolve({ launcher: 'Xbox', pid: child.pid }); });
+    });
   }
+  if (game.launchUri) {
+    const steam = /^steam:\/\/rungameid\/[1-9]\d{0,9}$/.test(game.launchUri);
+    if (!steam && !/^com\.epicgames\.launcher:\/\/apps\/[\w.%:-]+\?action=launch&silent=true$/.test(game.launchUri)) throw new Error('Game launch address is invalid.');
+    await fs.access(game.platformFolder || game.folder);
+    if (steam && game.steamManifest) await fs.access(game.steamManifest);
+    if (!openExternal) throw new Error(`Open this game through ${steam ? 'Steam' : 'Epic Games Launcher'}.`);
+    await openExternal(game.launchUri);
+    return { launcher: steam ? 'Steam' : 'Epic Games Launcher' };
+  }
+  const executable = await validatedExecutable(game, chosen);
   return new Promise((resolve, reject) => {
     const child = spawnProcess(executable, [], { cwd: path.dirname(executable), detached: true, stdio: 'ignore', shell: false });
     child.once('error', reject);
@@ -82,8 +100,18 @@ async function artworkPath(library, id, kind) {
   const game = library.games.find(game => game.id === id);
   if (!game) throw new Error('Game not found.');
   if (kind === 'music' && !/^music\.(mp3|ogg|wav|m4a|flac)$/.test(game.musicFile || '')) throw new Error('Music not found.');
-  const target = await fs.realpath(path.join(game.folder, '.orbit-assets', kind === 'music' ? game.musicFile : kind));
-  const relative = path.relative(await fs.realpath(game.folder), target);
+  const base = await fs.realpath(game.metadataFolder || game.folder);
+  let target;
+  try { target = await fs.realpath(path.join(base, '.orbit-assets', kind === 'music' ? game.musicFile : kind)); }
+  catch (error) {
+    if (kind !== 'cover' || !game.platformCover) throw error;
+    const platformBase = await fs.realpath(game.folder);
+    const cover = await fs.realpath(game.platformCover);
+    const relative = path.relative(platformBase, cover);
+    if (relative.startsWith('..') || path.isAbsolute(relative) || !/\.(png|jpg|jpeg|webp)$/i.test(cover)) throw new Error('Invalid artwork path.');
+    return cover;
+  }
+  const relative = path.relative(base, target);
   if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error('Invalid artwork path.');
   return target;
 }

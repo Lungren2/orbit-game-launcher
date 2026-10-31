@@ -14,10 +14,10 @@ function catalogueUrl(options = {}) {
   return url.href;
 }
 
-async function readCatalogue(url, fetchPage) {
+async function readCatalogue(url, fetchPage, signal) {
   const response = await fetchPage(url, {
     headers: { Accept: 'text/html', 'User-Agent': 'Orbit-Catalogue/1.0' },
-    redirect: 'error', signal: AbortSignal.timeout(20000),
+    redirect: 'error', signal: signal ? AbortSignal.any([signal,AbortSignal.timeout(20000)]) : AbortSignal.timeout(20000),
   });
   if (!response.ok) throw new Error(`PlayZip returned ${response.status}. Try again shortly.`);
   if (!response.headers.get('content-type')?.includes('text/html')) throw new Error('PlayZip returned an unexpected response.');
@@ -47,4 +47,4 @@ async function fetchCatalogue(options, fetchPage = fetch) {
   pending.set(url, task);
   return task;
 }
-module.exports = { catalogueUrl, fetchCatalogue };
+module.exports = { catalogueUrl, fetchCatalogue, readCatalogue, CATEGORIES };

@@ -7,7 +7,7 @@ function windowOptions() {
     title: 'Orbit', backgroundColor: '#080e18', autoHideMenuBar: true,
     icon: path.join(__dirname, '../dist/brand/orbit.png'),
     titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#00000000', symbolColor: '#eef2ff', height: 88 },
+    titleBarOverlay: { color: '#00000000', symbolColor: '#b4bac5', height: 32 },
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       autoplayPolicy: 'no-user-gesture-required',

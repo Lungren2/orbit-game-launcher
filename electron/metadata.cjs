@@ -14,7 +14,7 @@ async function locked(game, action) {
   try { return await task; } finally { if (locks.get(game.folder) === task) locks.delete(game.folder); }
 }
 async function readManifest(game) {
-  const file = path.join(game.folder, '.orbit-game.json');
+  const file = path.join(game.metadataFolder || game.folder, '.orbit-game.json');
   try {
     if ((await fs.lstat(file)).isSymbolicLink()) throw new Error('Game metadata must not be a link.');
     const data = JSON.parse(await fs.readFile(file, 'utf8'));
@@ -23,16 +23,16 @@ async function readManifest(game) {
   } catch (e) { if (e.code !== 'ENOENT') throw e; return { version: 1, name: game.name }; }
 }
 async function assetDirectory(game) {
-  const folder = await fs.realpath(game.folder);
+  const folder = await fs.realpath(game.metadataFolder || game.folder);
   const assets = path.join(folder, '.orbit-assets');
   await fs.mkdir(assets, { recursive: true });
   if ((await fs.lstat(assets)).isSymbolicLink() || !contained(folder, await fs.realpath(assets))) throw new Error('Artwork folder must stay inside the game folder.');
   return assets;
 }
 async function saveManifest(game, data) {
-  const temporary = path.join(game.folder, `.orbit-metadata-${randomUUID()}.tmp`);
+  const temporary = path.join(game.metadataFolder || game.folder, `.orbit-metadata-${randomUUID()}.tmp`);
   await fs.writeFile(temporary, JSON.stringify({ ...data, updatedAt: new Date().toISOString() }, null, 2));
-  try { await fs.rename(temporary, path.join(game.folder, '.orbit-game.json')); }
+  try { await fs.rename(temporary, path.join(game.metadataFolder || game.folder, '.orbit-game.json')); }
   catch (e) { await fs.unlink(temporary).catch(() => {}); throw e; }
 }
 async function writeAsset(game, name, bytes) {
@@ -169,7 +169,7 @@ async function autoConfigure(game, { fetchPage = fetch, bundledMusic = false, fo
     }
   }
   if (!force && saved.metadataCheckedAt && Date.now() - Date.parse(saved.metadataCheckedAt) < 7 * 86400000) return result;
-  let id = validId(saved.steamAppId) ? Number(saved.steamAppId) : null;
+  let id = validId(game.steamAppId) ? Number(game.steamAppId) : validId(saved.steamAppId) ? Number(saved.steamAppId) : null;
   if (!id) {
     const ids = new Set();
     for (const file of files.filter(f => /^steam_appid\.txt$/i.test(path.basename(f)))) { const text = (await fs.readFile(file, 'utf8')).trim(); if (/^\d+$/.test(text) && validId(text)) ids.add(Number(text)); }

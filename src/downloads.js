@@ -1,127 +1,56 @@
-const labels = {
-  downloading: "Downloading",
-  paused: "Paused",
-  interrupted: "Interrupted",
-  queued: "Waiting to import",
-  extracting: "Extracting",
-  importing: "Adding to library",
-  ready: "Ready to play",
-  "needs-executable": "Choose executable",
-  "needs-attention": "Needs attention",
-  cancelled: "Cancelled",
-  failed: "Import failed",
-};
-const bytes = (value) => {
-  if (!value) return "0 B";
-  const unit = Math.min(3, Math.floor(Math.log(value) / Math.log(1024)));
-  return `${(value / 1024 ** unit).toFixed(unit ? 1 : 0)} ${["B", "KB", "MB", "GB"][unit]}`;
-};
+const labels = { downloading: 'Downloading', paused: 'Paused', interrupted: 'Interrupted', queued: 'Waiting to install', extracting: 'Extracting', importing: 'Installing', ready: 'Not in library', 'needs-executable': 'Setup required', 'needs-attention': 'Needs attention', failed: 'Installation failed' };
+const pathKey = value => String(value || '').replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+export const catalogueId = value => /^\d+$/.test(String(value)) && Number.isSafeInteger(Number(value)) && Number(value) > 0 ? String(Number(value)) : null;
 
-export function createDownloads({
-  desktop,
-  request,
-  esc,
-  icon,
-  toast,
-  viewLibrary,
-}) {
-  let jobs = [],
-    target;
-  function draw() {
-    const count = jobs.filter((job) =>
-      ["downloading", "paused", "queued", "extracting", "importing"].includes(
-        job.status,
-      ),
-    ).length;
-    const indicator = document.querySelector("#downloads-count");
-    if (indicator) {
-      indicator.textContent = count || "";
-      indicator.hidden = !count;
-    }
-    if (!target?.isConnected || document.body.dataset.view !== "downloads")
-      return;
-    const focused = document.activeElement?.dataset.downloadAction;
-    const focusedJob = document.activeElement?.dataset.jobId;
-    target.innerHTML = `<section class="downloads-view"><div class="downloads-toolbar"><h1>Downloads</h1><button class="text-button" id="add-archive">${icon("folder")} Import archive</button></div>${
-      !desktop
-        ? '<div class="catalogue-message">Downloads are available in the desktop app.</div>'
-        : !jobs.length
-          ? '<div class="catalogue-message">Your downloads will appear here.</div>'
-          : `<div class="download-list">${[...jobs]
-              .reverse()
-              .map((job) => {
-                const percent = job.total
-                  ? Math.min(100, Math.round((job.received / job.total) * 100))
-                  : 0;
-                const controls = [];
-                if (job.status === "downloading" && job.live)
-                  controls.push(["pause", "Pause"]);
-                if (
-                  (job.status === "paused" && job.live) ||
-                  (job.status === "interrupted" && job.live && job.resumable)
-                )
-                  controls.push(["resume", "Resume"]);
-                if (job.live || job.status === "queued")
-                  controls.push(["cancel", "Cancel"]);
-                if (
-                  job.downloadComplete &&
-                  ["failed", "interrupted"].includes(job.status)
-                )
-                  controls.push(["retry", "Retry import"]);
-                if (job.status === "needs-executable")
-                  controls.push(["executable", "Choose executable"]);
-                if (job.status === "ready")
-                  controls.push(["library", "View library"]);
-                if (job.downloadComplete || job.folder)
-                  controls.push(["folder", "Open folder"]);
-                return `<article class="download-row"><div class="download-art">${job.game.coverUrl ? `<img src="${esc(job.game.coverUrl)}" alt="" referrerpolicy="no-referrer">` : icon("grid")}</div><div class="download-info"><h2>${esc(job.game.name)}</h2><div class="download-status">${esc(labels[job.status] || job.status)}${["downloading", "paused", "interrupted"].includes(job.status) ? `<span>${bytes(job.received)}${job.total ? ` / ${bytes(job.total)}` : ""}</span>` : ""}</div>${["downloading", "paused", "interrupted"].includes(job.status) ? `<progress max="100" ${job.total ? `value="${percent}"` : ""} aria-label="${esc(job.game.name)} download progress"></progress>` : ""}${job.message ? `<p class="download-message">${esc(job.message)}</p>` : ""}<div class="download-actions">${controls.map(([action, label]) => `<button data-download-action="${action}" data-job-id="${job.id}">${label}</button>`).join("")}</div></div></article>`;
-              })
-              .join("")}</div>`
-    }</section>`;
-    target.querySelector("#add-archive").onclick = () => addArchive();
-    target.querySelectorAll("[data-download-action]").forEach(
-      (button) =>
-        (button.onclick = async () => {
-          const id = button.dataset.jobId,
-            action = button.dataset.downloadAction;
-          button.disabled = true;
-          try {
-            if (action === "library") return viewLibrary();
-            if (action === "folder") await request("downloadFolder", id);
-            else if (action === "executable")
-              await request("downloadExecutable", id);
-            else jobs = await request("downloadControl", id, action);
-          } catch (error) {
-            toast(error.message);
-          } finally {
-            draw();
-          }
-        }),
-    );
-    if (focused && focusedJob)
-      target
-        .querySelector(
-          `[data-download-action="${focused}"][data-job-id="${focusedJob}"]`,
-        )
-        ?.focus({ preventScroll: true });
-  }
-  async function addArchive(game) {
-    if (!desktop) return toast("Available in the desktop app.");
-    try {
-      await request("addArchive", game || undefined);
-    } catch (error) {
-      toast(error.message);
-    }
-  }
-  return {
-    mount(element) {
-      target = element;
-      draw();
-    },
-    update(next) {
-      jobs = next;
-      draw();
-    },
-    addArchive,
-  };
+export function sameDownload(a, b) {
+  const id = catalogueId(a.game?.id), steam = catalogueId(a.game?.steamAppId);
+  return a.id === b.id || !!(id && id === catalogueId(b.game?.id)) || !!(steam && steam === catalogueId(b.game?.steamAppId));
+}
+
+export function installedDownload(job, games) {
+  const id = catalogueId(job.game?.id), steam = catalogueId(job.game?.steamAppId);
+  return games.find(game => (job.gameId && game.id === job.gameId) || (job.folder && pathKey(game.folder) === pathKey(job.folder)) ||
+    (id && catalogueId(game.playzipId) === id) || (steam && catalogueId(game.steamAppId) === steam));
+}
+
+export function pendingDownloads(jobs, games, root) {
+  const seen = new Set();
+  return [...jobs].reverse().filter(job => {
+    if (!labels[job.status] || !job.game?.name || installedDownload(job, games)) return false;
+    if (root && job.root && pathKey(root) !== pathKey(job.root)) return false;
+    const id = catalogueId(job.game.id), steam = catalogueId(job.game.steamAppId);
+    const key = id ? `catalogue:${id}` : steam ? `steam:${steam}` : `job:${job.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+}
+
+export function downloadGames(jobs, games, root) {
+  return pendingDownloads(jobs, games, root).map(job => ({ id: `download-${job.id}`, name: job.game.name, coverUrl: job.game.coverUrl || null, download: job }));
+}
+
+export function downloadStatus(job) {
+  const transferring = ['downloading', 'paused', 'interrupted'].includes(job.status);
+  const percent = transferring && job.total > 0 ? Math.max(0, Math.min(100, Math.floor(job.received / job.total * 100))) : null;
+  return { label: labels[job.status] || 'Not installed', percent, text: `${labels[job.status] || 'Not installed'}${percent === null ? '' : ` · ${percent}%`}` };
+}
+
+export function downloadMarkup(job, esc, { compact = false } = {}) {
+  if (!job) return '';
+  const state = downloadStatus(job);
+  const progress = ['downloading', 'paused', 'interrupted', 'queued', 'extracting', 'importing'].includes(job.status);
+  const message = compact ? '' : job.message || (job.status === 'ready' ? 'Rescan the library or import the archive again.' : '');
+  return `<span class="installation-label">${esc(state.text)}</span>${progress ? `<progress max="100" ${state.percent === null ? '' : `value="${state.percent}"`} aria-label="${esc(job.game.name)} installation progress"></progress>` : ''}${message ? `<span class="installation-message">${esc(message)}</span>` : ''}`;
+}
+
+export function downloadActions(job) {
+  const actions = [];
+  if (job.status === 'downloading' && job.live) actions.push(['pause','Pause']);
+  if ((job.status === 'paused' || job.status === 'interrupted' && job.resumable) && job.live) actions.push(['resume','Resume']);
+  if (job.live || job.status === 'queued') actions.push(['cancel','Cancel']);
+  if (job.downloadComplete && ['failed','interrupted'].includes(job.status)) actions.push(['retry','Retry installation']);
+  if (['ready','needs-attention'].includes(job.status)) actions.push(['reimport','Import archive']);
+  if (job.status === 'interrupted' && !job.live && !job.downloadComplete) actions.push(catalogueId(job.game?.id) ? ['restart','Download again'] : ['reimport','Import archive']);
+  if (!['extracting','importing'].includes(job.status)) actions.push(['delete','Delete download']);
+  return actions;
 }

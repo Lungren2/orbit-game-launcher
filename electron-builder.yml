@@ -1,0 +1,23 @@
+# Wraps the app built by scripts/package.cjs (release/Orbit) in a Windows
+# installer. Run with `npm run installer`.
+appId: com.orbit.launcher
+productName: Orbit
+copyright: Copyright © 2026 Orbit
+directories:
+  output: release/installer
+win:
+  target: nsis
+  icon: public/brand/orbit.ico
+  executableName: Orbit
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Orbit
+  uninstallDisplayName: Orbit
+  installerIcon: public/brand/orbit.ico
+  uninstallerIcon: public/brand/orbit.ico
+  deleteAppDataOnUninstall: false
+  artifactName: Orbit-Setup-${version}.exe
