@@ -121,5 +121,5 @@ function GameSetup({ app, game }) {
 }
 
 function Controls() {
-  return <div className="shortcut-list">{[['Select game','← → Home End'],['Activate','Enter / Space'],['Search','/'],['Fullscreen','F11'],['Back','Esc']].map(([label,key])=><div className="shortcut-row" key={label}><span>{label}</span><kbd>{key}</kbd></div>)}</div>;
+  return <div className="shortcut-list">{[['Select game','← → Home End'],['Activate','Enter / Space'],['Search','/'],['Fullscreen','F11'],['Back','Esc'],['Move (controller)','D-pad / left stick'],['Select or play (controller)','A'],['Back (controller)','B'],['Home / Library (controller)','LB / RB'],['Settings (controller)','Menu']].map(([label,key])=><div className="shortcut-row" key={label}><span>{label}</span><kbd>{key}</kbd></div>)}</div>;
 }

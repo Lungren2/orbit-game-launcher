@@ -34,6 +34,20 @@ npm run package
 
 `npm run smoke`, `npm run check:home`, and `npm run check:ui` use the same production-renderer Electron harness. It checks the sandboxed bridge, installed-first collection, Fluid selects and dialogs, search, pagination, offline access, archive import, transfer recovery/deletion, uninstall cancellation, metadata controls, keyboard focus, audio continuity, the 30-second clock, reduced motion, collection sizes from 0 to 100 games, saved executables, and layouts from 900px to 4K. Launches and destructive actions are intercepted. It needs installed games in `D:\Games` and saves captures under `research/playzip/screenshots`.
 
+`npm run check:gamepad` drives Home, Library and Settings with a simulated controller, using a throwaway library instead of `D:\Games`.
+
+## Releases and updates
+
+`npm run installer` builds `release/installer/Orbit-Setup-<version>.exe`, a per-user installer with Start Menu and desktop shortcuts and an entry in Settings → Apps. Installed copies check GitHub Releases on start and every four hours. They download new versions in the background, then install them when Orbit restarts or when **Restart to update** is pressed in the header.
+
+To publish a version, bump `version` in `package.json`, run `npm run installer`, then upload the installer, its `.blockmap` and `latest.yml` to a release tagged `v<version>`:
+
+```powershell
+gh release create v1.2.0 release/installer/Orbit-Setup-1.2.0.exe release/installer/Orbit-Setup-1.2.0.exe.blockmap release/installer/latest.yml
+```
+
+Without `latest.yml`, installed copies won't see the release. Setting `ORBIT_UPDATE_FEED` to a URL serving those three files points an installed copy at a local feed for testing.
+
 `npm run check:types` checks the registry TypeScript components and the Vite link adapter. `npm test` exercises library scanning, launch validation, metadata, archive safety, HatchZip recovery, download deletion and music state using temporary fixtures.
 
 ## Interface components
@@ -61,6 +75,18 @@ Platform artwork overrides and metadata are cached under Orbit's user data in `p
 | / | Search |
 | F11 | Toggle fullscreen |
 | Escape | Dismiss the hover overlay, close a dialog or return to Home |
+
+Controllers using the standard mapping (Xbox, PlayStation and most XInput pads) work too:
+
+| Button | Action |
+| --- | --- |
+| D-pad / left stick | Move between games and controls |
+| A | Activate the focused control; on a Home cover, play the game |
+| B | Back: close a menu or dialog, or return to Home |
+| LB / RB | Switch between Home and Library |
+| Menu (Start) | Open or close Settings |
+
+Orbit ignores the controller while another window, such as a running game, has focus. Text fields such as search still need a keyboard; Windows' on-screen keyboard opens with Win + Ctrl + O.
 
 Use the menu beside Play to favorite a game, open its folder, or choose its executable. Library combines installed games and the PlayZip catalogue. Installed games appear first on page one, followed by available games with Install controls. All games, Installed, Favorites, and Recent filters share the same search. The menu beside each installed game includes Uninstall. Recent tracks launches made through Orbit, not playtime or game progress. Settings lets you change the game folder, rescan, or view keyboard controls.
 

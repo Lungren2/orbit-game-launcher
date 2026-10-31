@@ -1,10 +1,11 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Search, Settings2 } from 'lucide-react';
+import { RefreshCw, Search, Settings2 } from 'lucide-react';
 import { FluidProvider } from '@/lib/fluid-provider';
 import { fontWeights } from '@/lib/font-weight';
 import { spring } from '@/lib/springs';
 import { useOrbit } from '@/hooks/use-orbit';
+import { useGamepad } from '@/hooks/use-gamepad';
 import { Button } from '@/components/ui/button';
 import { TabsSubtle, TabsSubtleItem } from '@/components/ui/tabs-subtle';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -15,11 +16,16 @@ import { OrbitOverlays } from '@/components/orbit-overlays';
 import { artwork, request, desktop } from '@/lib/orbit';
 
 export default function App() {
-  const app = useOrbit(), [libraryOpened,setLibraryOpened] = useState(false);
+  const app = useOrbit(), [libraryOpened,setLibraryOpened] = useState(false), update = useUpdateStatus();
   const game = app.games.find(game=>game.id===app.selectedId);
   useLayoutEffect(()=>{document.body.dataset.view=app.view;document.body.dataset.art=game?.art || 'default';},[app.view,game?.art]);
   useEffect(()=>{if(app.view==='catalogue')setLibraryOpened(true);},[app.view]);
   const search = () => { app.navigate('catalogue'); requestAnimationFrame(()=>document.querySelector('#catalogue-search')?.focus()); };
+  useGamepad({
+    blocked:app.busy,
+    onTab:direction=>{if(!app.modal)app.navigate(direction>0 ? 'catalogue' : 'games');},
+    onMenu:()=>{if(app.modal?.type==='settings')app.closeModal();else if(!app.modal)app.openModal({type:'settings'});},
+  });
   useEffect(()=>{
     const key = event => {
       if(event.key==='F11'){event.preventDefault();app.fullscreen();return;}
@@ -40,12 +46,23 @@ export default function App() {
       <nav aria-label="Main"><TabsSubtle idPrefix="orbit-route" selectedIndex={app.view==='games' ? 0 : 1} onSelect={index=>app.navigate(index===0 ? 'games' : 'catalogue')}>
         <TabsSubtleItem index={0} label="Home" data-view="games"/><TabsSubtleItem index={1} label="Library" data-view="catalogue"/>
       </TabsSubtle></nav>
-      <div className="utilities"><div className="route-music-slot">{app.view!=='games' && <ThemePlayer app={app} compact/>}</div>{app.view==='games' && <IconButton id="search-button" label="Search" onClick={search}><Search/></IconButton>}<IconButton id="settings-button" label="Settings" onClick={()=>app.openModal({type:'settings'})}><Settings2/></IconButton></div>
+      <div className="utilities">{update.state==='ready' && <Button leadingIcon={RefreshCw} variant="secondary" size="compact" id="install-update" onClick={()=>app.perform(()=>request('installUpdate'))}>Restart to update</Button>}<div className="route-music-slot">{app.view!=='games' && <ThemePlayer app={app} compact/>}</div>{app.view==='games' && <IconButton id="search-button" label="Search" onClick={search}><Search/></IconButton>}<IconButton id="settings-button" label="Settings" onClick={()=>app.openModal({type:'settings'})}><Settings2/></IconButton></div>
     </header>
     <main id="main"><div id="orbit-route-panel-0" role="tabpanel" aria-labelledby="orbit-route-tab-0" className="home-view" hidden={app.view!=='games'}><HomeCarousel app={app} visible={app.view==='games'}/></div>{(libraryOpened || app.view==='catalogue') && <GameLibrary app={app} visible={app.view==='catalogue'}/>}</main></div>
     <OrbitOverlays app={app}/>
     <div className="toast-container" role="status" aria-live="polite"><AnimatePresence>{app.message && <motion.div className="toast" key={app.message} initial={{opacity:0,y:4}} animate={{opacity:1,y:0}} exit={{opacity:0,transition:spring.fast.exit}} transition={spring.fast}>{app.message}</motion.div>}</AnimatePresence></div>
   </div>;
+}
+
+// Updates download in the background; offer a restart once one is ready.
+function useUpdateStatus() {
+  const [status,setStatus] = useState({state:'idle'});
+  useEffect(()=>{
+    if(!desktop || !window.orbit.onUpdateStatus)return;
+    request('updateStatus').then(setStatus,()=>{});
+    return window.orbit.onUpdateStatus(setStatus);
+  },[]);
+  return status;
 }
 
 export function OrbitRoot() { return <FluidProvider shape="rounded" size="default"><TooltipProvider><App/></TooltipProvider></FluidProvider>; }

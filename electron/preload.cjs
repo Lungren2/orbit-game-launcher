@@ -30,4 +30,7 @@ contextBridge.exposeInMainWorld('orbit', {
   openFolder: (id) => ipcRenderer.invoke('open-folder', id),
   uninstall: id => ipcRenderer.invoke('uninstall', id),
   fullscreen: () => ipcRenderer.invoke('fullscreen'),
+  updateStatus: () => ipcRenderer.invoke('update-status'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+  onUpdateStatus: callback => { const listener = (_, status) => callback(status); ipcRenderer.on('update-status', listener); return () => ipcRenderer.removeListener('update-status', listener); },
 });

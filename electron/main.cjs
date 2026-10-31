@@ -10,6 +10,7 @@ const metadata = require('./metadata.cjs');
 const bundledThemes = require('./themes.json');
 const { windowOptions } = require('./window.cjs');
 const { removalTarget, uninstallUri } = require('./removal.cjs');
+const { startUpdates } = require('./updater.cjs');
 let win, library, downloads, catalogue, covers, quitting = false, state = { root: 'D:\\Games', favorites: [], recent: {}, executables: {}, autoMetadata: true };
 const configured = new Set();
 let configuring = false;
@@ -210,6 +211,9 @@ app.whenReady().then(async () => {
     if (error) throw new Error(error);
   }));
   ipcMain.handle('fullscreen', attempt(() => { win.setFullScreen(!win.isFullScreen()); return win.isFullScreen(); }));
+  const updates = startUpdates({ app, send: status => { if (!win.isDestroyed()) win.webContents.send('update-status', status); } });
+  ipcMain.handle('update-status', attempt(() => updates.status()));
+  ipcMain.handle('install-update', attempt(() => updates.install()));
   await win.loadURL(appUrl);
   catalogue.start();
 });
