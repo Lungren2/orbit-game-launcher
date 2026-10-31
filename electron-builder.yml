@@ -21,3 +21,9 @@ nsis:
   uninstallerIcon: public/brand/orbit.ico
   deleteAppDataOnUninstall: false
   artifactName: Orbit-Setup-${version}.exe
+# Writes latest.yml next to the installer; upload both (and the .blockmap) to
+# the GitHub Release so installed copies update themselves.
+publish:
+  provider: github
+  owner: Lungren2
+  repo: orbit-game-launcher
