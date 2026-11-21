@@ -40,6 +40,7 @@ function validateGame(game, origin = "https://playzip.com") {
   };
 }
 
+const supportedArchive = (filename) => /\.(zip|7z|rar)$/i.test(filename || "") && !/\.part\d+\.|\.\d{3}$/i.test(filename);
 class DownloadManager extends EventEmitter {
   constructor({
     session,
@@ -92,7 +93,8 @@ class DownloadManager extends EventEmitter {
           job.message = job.downloadComplete
             ? "Import interrupted. You can retry."
             : "Download interrupted when Orbit closed. Start it again from PlayZip.";
-        }
+        } else if (job.status === "needs-attention" && supportedArchive(job.filename))
+          job.message = "Orbit can install this format now. Download it again.";
     } catch {
       this.jobs = [];
     }
@@ -238,10 +240,7 @@ class DownloadManager extends EventEmitter {
       this.requests.delete(url);
     });
     const filename = item.getFilename();
-    if (
-      !/\.(zip|7z)$/i.test(filename) ||
-      /\.part\d+\.|\.\d{3}$/i.test(filename)
-    ) {
+    if (!supportedArchive(filename)) {
       event.preventDefault();
       const job = this.newJob(
         pending.context.game,
@@ -250,7 +249,7 @@ class DownloadManager extends EventEmitter {
       );
       job.status = "needs-attention";
       job.message =
-        "Only single ZIP and 7z archives are imported. Download installers or multipart files in your browser.";
+        "Orbit can install single ZIP, 7z and RAR archives. Installers and multipart downloads need to be handled in your browser.";
       this.changed();
       return;
     }
@@ -341,6 +340,8 @@ class DownloadManager extends EventEmitter {
               this.changed();
             },
           });
+          // HatchZip consumes its archive as it extracts. RAR goes through 7-Zip, so remove the staged copy here.
+          if (/\.rar$/i.test(job.archive)) await fs.rm(job.archive, { force: true }).catch(() => {});
           job.folder = result.folder;
           job.extractionEngine = result.extractionEngine || '7zip';
           const game = (await scanLibrary(job.root)).games.find(
@@ -375,7 +376,7 @@ class DownloadManager extends EventEmitter {
       ? validateGame(game, this.origin)
       : {
           id: "local",
-          name: path.basename(archive).replace(/\.(zip|7z)$/i, ""),
+          name: path.basename(archive).replace(/\.(zip|7z|rar)$/i, ""),
           coverUrl: null,
           genre: "PC game",
         };
@@ -466,7 +467,7 @@ class DownloadManager extends EventEmitter {
   }
   async shutdown() {
     this.stopping = true;
-    await require('./hatchzip.cjs').stopHatchzip();
+    await Promise.all([require('./hatchzip.cjs').stopHatchzip(), require('./importer.cjs').stopSevenZip()]);
     await this.importTail.catch(() => {});
     await this.flush();
   }

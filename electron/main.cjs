@@ -151,7 +151,7 @@ app.whenReady().then(async () => {
     return { removed: true };
   }));
   ipcMain.handle('add-archive', attempt(async game => {
-    const result = await dialog.showOpenDialog(win, { title: 'Import game archive', filters: [{ name: 'Game archives', extensions: ['zip','7z'] }], properties: ['openFile'] });
+    const result = await dialog.showOpenDialog(win, { title: 'Import game archive', filters: [{ name: 'Game archives', extensions: ['zip','7z','rar'] }], properties: ['openFile'] });
     if (result.canceled) return null;
     return downloads.addArchive(result.filePaths[0], game);
   }));

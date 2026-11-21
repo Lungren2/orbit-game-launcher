@@ -22,8 +22,49 @@ const safeName = (value) => {
 };
 const sevenZip = () =>
   process.resourcesPath && __dirname.includes("app.asar")
-    ? path.join(process.resourcesPath, "7zip/7za.exe")
-    : path.join(__dirname, "../vendor/7zip/7za.exe");
+    ? path.join(process.resourcesPath, "7zip/7z.exe")
+    : path.join(__dirname, "../vendor/7zip/7z.exe");
+const sevenZipChildren = new Set();
+const EXTRACT_TIMEOUT = 4 * 60 * 60 * 1000;
+
+async function stopSevenZip() {
+  await Promise.all([...sevenZipChildren].map(child => new Promise(resolve => { child.once("close", resolve); child.kill(); })));
+}
+
+const isRar = (bytes) =>
+  bytes.subarray(0, 7).equals(Buffer.from([0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0x00])) ||
+  bytes.subarray(0, 8).equals(Buffer.from([0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0x01, 0x00]));
+
+// The main header's volume flag marks one part of a multipart set, even when it is named plain .rar.
+function isRarVolume(bytes) {
+  if (bytes[6] === 0) return (bytes.readUInt16LE(10) & 1) === 1;
+  let position = 12;
+  const vint = () => {
+    let value = 0, scale = 1;
+    for (let i = 0; i < 10 && position < bytes.length; i++) {
+      const byte = bytes[position++];
+      value += (byte & 127) * scale; scale *= 128;
+      if (!(byte & 128)) return value;
+    }
+    throw new Error("The archive is damaged, incomplete, or unsupported.");
+  };
+  vint(); vint();
+  const flags = vint();
+  if (flags & 1) vint();
+  if (flags & 2) vint();
+  return (vint() & 1) === 1;
+}
+
+async function readSignature(archive) {
+  const handle = await fs.open(archive, "r");
+  const signature = Buffer.alloc(64);
+  try {
+    await handle.read(signature, 0, 64, 0);
+  } finally {
+    await handle.close();
+  }
+  return signature;
+}
 
 function run7zip(args, timeout = 15 * 60 * 1000) {
   return new Promise((resolve, reject) => {
@@ -32,6 +73,7 @@ function run7zip(args, timeout = 15 * 60 * 1000) {
       stdio: ["pipe", "pipe", "pipe"],
       shell: false,
     });
+    sevenZipChildren.add(child);
     let stdout = "",
       stderr = "",
       failure;
@@ -52,10 +94,12 @@ function run7zip(args, timeout = 15 * 60 * 1000) {
     });
     child.once("error", (error) => {
       clearTimeout(timer);
+      sevenZipChildren.delete(child);
       reject(error);
     });
     child.once("close", (code) => {
       clearTimeout(timer);
+      sevenZipChildren.delete(child);
       if (failure) reject(failure);
       else if (code !== 0)
         reject(
@@ -109,9 +153,11 @@ function validateListing(listing, available = Number.MAX_SAFE_INTEGER) {
     )
       throw new Error("Archive contains an unsafe file path.");
     if (
-      Object.keys(record).some((key) =>
-        /symbolic link|hard link|reparse|alternate stream/i.test(key),
+      // RAR listings include these fields for every file, so only a value marks a link.
+      Object.entries(record).some(([key, value]) =>
+        /symbolic link|hard link|copy link|reparse|alternate stream/i.test(key) && !["", "-"].includes(value.trim()),
       ) ||
+      /\bLink:/.test(record.Characteristics || "") ||
       /(^|\s)l[rwx-]|^[^ ]*L/i.test(record.Attributes || "")
     )
       throw new Error(
@@ -224,6 +270,9 @@ async function importArchive({
   artwork = true,
   spaceSaving = false,
 }) {
+  // HatchZip has no RAR decoder, so RAR archives extract through 7-Zip.
+  const managedRar = spaceSaving && await readSignature(archive).then(isRar, error => { if (error.code === "ENOENT") return false; throw error; });
+  if (managedRar) return { ...await importArchive({ archive, root, game, onState, artwork }), extractionEngine: '7zip' };
   if (spaceSaving) {
     try { return await require('./hatchzip.cjs').importManagedArchive(
       { archive, root, game, onState, artwork },
@@ -244,20 +293,17 @@ async function importArchive({
   await fs.mkdir(extracted);
   let destination;
   try {
-    const handle = await fs.open(archive, "r");
-    const signature = Buffer.alloc(6);
-    try {
-      await handle.read(signature, 0, 6, 0);
-    } finally {
-      await handle.close();
-    }
+    const signature = await readSignature(archive);
     if (
       !signature.subarray(0, 4).equals(Buffer.from([0x50, 0x4b, 0x03, 0x04])) &&
-      !signature.equals(Buffer.from([0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c]))
+      !signature.subarray(0, 6).equals(Buffer.from([0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c])) &&
+      !isRar(signature)
     )
       throw new Error(
-        "Only complete ZIP and 7z game archives can be imported automatically.",
+        "Only complete ZIP, 7z and RAR game archives can be imported automatically.",
       );
+    if (isRar(signature) && isRarVolume(signature))
+      throw new Error("This is one part of a multipart RAR archive. Orbit can only install single-file archives.");
     onState("extracting");
     const disk = await fs.statfs(resolvedRoot);
     const available =
@@ -277,7 +323,7 @@ async function importArchive({
       `-o${extracted}`,
       "--",
       archive,
-    ]);
+    ], EXTRACT_TIMEOUT);
     await verifyTree(extracted);
     onState("importing");
     const base = safeName(game.name);
@@ -365,5 +411,6 @@ module.exports = {
   inside,
   sevenZip,
   run7zip,
+  stopSevenZip,
   removePrivate,
 };

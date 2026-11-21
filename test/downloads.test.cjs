@@ -112,6 +112,18 @@ test('download-page popups become managed downloads rather than windows', async 
   let prevented = false; manager.capture({ preventDefault: () => { prevented = true; } }, executable, contents);
   assert.equal(prevented, true); assert.equal(manager.jobs[0].status, 'needs-attention');
 });
+test('single RAR downloads are captured and multipart RAR downloads are refused', async t => {
+  const { manager, game, contents } = await fixture(t); await manager.prepare(game);
+  contents.mainFrame.frames = [{ parent: contents.mainFrame, url: 'https://playzip.com/download/226' }];
+  manager.popup({ url: 'https://files.example/game.part1.rar', referrer: { url: 'https://playzip.com/download/226' } });
+  let prevented = false; manager.capture({ preventDefault: () => { prevented = true; } }, item(contents.url, 'Game.part1.rar'), contents);
+  assert.equal(prevented, true); assert.equal(manager.jobs[0].status, 'needs-attention'); assert.match(manager.jobs[0].message, /multipart/);
+  manager.popup({ url: 'https://files.example/game.rar', referrer: { url: 'https://playzip.com/download/226' } });
+  const download = item(contents.url, 'Game.rar');
+  manager.capture({ preventDefault: () => assert.fail('RAR download blocked') }, download, contents);
+  assert.match(download.path, /\.orbit-staging/); assert.equal(manager.jobs[1].status, 'downloading');
+  await manager.control(manager.jobs[1].id, 'cancel');
+});
 test('catalogue metadata cannot supply arbitrary artwork URLs or game paths', () => {
   assert.throws(() => validateGame({ id: '../x', name: 'x', url: 'https://playzip.com/game/../x' }));
   const game = validateGame({ id: '1', name: 'Game', url: 'https://playzip.com/game/1', coverUrl: 'http://127.0.0.1/secrets' });

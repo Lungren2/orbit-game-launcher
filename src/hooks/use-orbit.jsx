@@ -102,7 +102,7 @@ export function useOrbit() {
     if (opening.current || !/^https:\/\/playzip\.com\/game\/\d+$/.test(game?.url || '')) return;
     const installed = installedDownload({game},live.current.library.games); if (installed) return play(installed.id);
     opening.current = true;
-    try { if (desktop) token.current = await request('prepareDownload',game); openModal({type:'install',game}); }
+    try { if (desktop) token.current = await request('prepareDownload',game); openModal({type:'install',game,openedAt:Date.now()}); }
     catch(error) { notify(error.message); } finally { opening.current = false; }
   },[openModal,notify,play]);
   const details = useCallback(id => { select(id,'manual'); openModal({type:'details',gameId:id}); },[select,openModal]);

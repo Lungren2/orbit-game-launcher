@@ -2,6 +2,8 @@ const labels = { downloading: 'Downloading', paused: 'Paused', interrupted: 'Int
 const pathKey = value => String(value || '').replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
 export const catalogueId = value => /^\d+$/.test(String(value)) && Number.isSafeInteger(Number(value)) && Number(value) > 0 ? String(Number(value)) : null;
 
+const supportedArchive = filename => /\.(zip|7z|rar)$/i.test(filename || '') && !/\.part\d+\.|\.\d{3}$/i.test(filename);
+
 export function sameDownload(a, b) {
   const id = catalogueId(a.game?.id), steam = catalogueId(a.game?.steamAppId);
   return a.id === b.id || !!(id && id === catalogueId(b.game?.id)) || !!(steam && steam === catalogueId(b.game?.steamAppId));
@@ -49,7 +51,8 @@ export function downloadActions(job) {
   if ((job.status === 'paused' || job.status === 'interrupted' && job.resumable) && job.live) actions.push(['resume','Resume']);
   if (job.live || job.status === 'queued') actions.push(['cancel','Cancel']);
   if (job.downloadComplete && ['failed','interrupted'].includes(job.status)) actions.push(['retry','Retry installation']);
-  if (['ready','needs-attention'].includes(job.status)) actions.push(['reimport','Import archive']);
+  if (job.status === 'ready') actions.push(['reimport','Import archive']);
+  if (job.status === 'needs-attention' && supportedArchive(job.filename)) actions.push(catalogueId(job.game?.id) ? ['restart','Download again'] : ['reimport','Import archive']);
   if (job.status === 'interrupted' && !job.live && !job.downloadComplete) actions.push(catalogueId(job.game?.id) ? ['restart','Download again'] : ['reimport','Import archive']);
   if (!['extracting','importing'].includes(job.status)) actions.push(['delete','Delete download']);
   return actions;

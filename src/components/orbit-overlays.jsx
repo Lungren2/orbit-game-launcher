@@ -18,6 +18,7 @@ export function OrbitOverlays({ app }) {
   const modal = app.modal || previous.current;
   const game = modal?.game || app.library.games.find(game=>game.id===modal?.gameId);
   const title = modal?.type==='details' ? game?.name || 'Game options' : modal?.type==='setup' ? 'Artwork & music' : modal?.type==='install' ? game?.name : modal?.type==='transfers' ? 'Transfers' : modal?.type==='controls' ? 'Controls' : 'Settings';
+  const refused = modal?.type==='install' && app.jobs.findLast(job=>String(job.game?.id)===String(game?.id) && job.status==='needs-attention' && Date.parse(job.createdAt)>=modal.openedAt);
   return <Dialog open={Boolean(app.modal)} onOpenChange={open=>{if(!open)app.closeModal();}}>
     <DialogContent size={modal?.type==='install' ? 'xl' : 'lg'} showCloseButton={false} className={`orbit-dialog ${modal?.type==='install' ? 'catalogue-modal' : ''} ${modal?.type==='setup' ? 'game-setup' : ''}`} aria-describedby="orbit-dialog-description"
       onCloseAutoFocus={event=>{event.preventDefault();requestAnimationFrame(()=>{if(app.lastFocus.current?.isConnected)app.lastFocus.current.focus({preventScroll:true});else document.querySelector('#settings-button')?.focus();});}}>
@@ -25,7 +26,7 @@ export function OrbitOverlays({ app }) {
         {modal?.type==='install' && desktop && <Button leadingIcon={FolderOpen} variant="ghost" size="compact" className="frame-import" onClick={()=>app.addArchive(game)}>Import archive</Button>}
         <DialogClose asChild><Button variant="ghost" size="icon" id="close-dialog" aria-label="Close"><X/></Button></DialogClose>
       </DialogHeader>
-      {modal?.type==='install' ? <div className="playzip-frame-wrap">{app.modal && <iframe className="playzip-frame" src={game.url} title={`${game.name} on PlayZip`} sandbox={`allow-scripts allow-same-origin allow-forms${desktop ? ' allow-downloads allow-popups' : ''}`} referrerPolicy="no-referrer"/>}</div> :
+      {modal?.type==='install' ? <div className="playzip-frame-wrap">{refused && <p className="download-notice" id="download-notice" role="alert"><strong>{refused.filename} wasn't downloaded.</strong> {refused.message}</p>}{app.modal && <iframe className="playzip-frame" src={game.url} title={`${game.name} on PlayZip`} sandbox={`allow-scripts allow-same-origin allow-forms${desktop ? ' allow-downloads allow-popups' : ''}`} referrerPolicy="no-referrer"/>}</div> :
         <ScrollArea className="dialog-scroll" viewportClassName="dialog-scroll-viewport scroll-fade">
           {modal?.type==='details' && game && <GameDetails app={app} game={game}/>}
           {modal?.type==='setup' && game && <GameSetup app={app} game={game}/>}
