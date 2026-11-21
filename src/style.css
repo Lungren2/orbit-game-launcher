@@ -96,8 +96,10 @@ progress::-webkit-progress-value { background:var(--primary); border-radius:4px;
 .dialog-scroll { flex:1; min-height:0; }
 .dialog-scroll-viewport { padding:20px; max-height:calc(100dvh - 166px); }
 .catalogue-modal { width:calc(100vw - 64px); max-width:1280px; height:calc(100dvh - 96px); }
-.playzip-frame-wrap { min-height:0; flex:1; background:var(--card); }
-.playzip-frame { display:block; border:0; width:100%; height:100%; background:white; }
+.playzip-frame-wrap { display:flex; flex-direction:column; min-height:0; flex:1; background:var(--card); }
+.playzip-frame { display:block; border:0; width:100%; flex:1; min-height:0; background:white; }
+.download-notice { padding:10px 20px; border-bottom:1px solid var(--border); color:var(--muted-foreground); font-size:var(--fs-body,13px); line-height:var(--lh-body,20px); overflow-wrap:anywhere; }
+.download-notice strong { color:var(--destructive); font-weight:600; }
 .settings-content,.setup-content,.game-details-content { display:flex; flex-direction:column; gap:16px; }
 .appearance-preview { display:flex; gap:16px; align-items:center; margin-bottom:4px; }
 .appearance-preview img { width:96px; height:64px; object-fit:cover; border-radius:8px; }

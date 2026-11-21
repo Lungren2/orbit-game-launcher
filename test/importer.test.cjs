@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
+const zlib = require('node:zlib');
 const { importArchive, validateListing, run7zip } = require('../electron/importer.cjs');
 const { scanLibrary } = require('../electron/library.cjs');
 
@@ -63,4 +64,49 @@ test('rejects non-archives without creating a visible game', async t => {
   await fs.writeFile(archive, 'this is not a zip');
   await assert.rejects(importArchive({ archive, root, game: { id: '1', name: 'Fixture' }, artwork: false }), /complete ZIP/);
   assert.equal((await scanLibrary(root)).games.length, 0);
+});
+
+const vint = value => { const bytes = []; do { let byte = value & 127; value = Math.floor(value / 128); if (value) byte |= 128; bytes.push(byte); } while (value); return Buffer.from(bytes); };
+const u32 = value => { const bytes = Buffer.alloc(4); bytes.writeUInt32LE(value >>> 0); return bytes; };
+const rarHeader = body => { const sized = Buffer.concat([vint(body.length), body]); return Buffer.concat([u32(zlib.crc32(sized)), sized]); };
+// Builds a stored RAR5 archive, since no RAR writer can be redistributed.
+function rar5(files, { volume = false } = {}) {
+  const blocks = files.flatMap(({ name, data = Buffer.alloc(0), link }) => {
+    const title = Buffer.from(name);
+    let extra = Buffer.alloc(0);
+    if (link) { const target = Buffer.from(link.target), record = Buffer.concat([vint(5), vint(link.type), vint(0), vint(target.length), target]); extra = Buffer.concat([vint(record.length), record]); }
+    const header = Buffer.concat([vint(2), vint((extra.length ? 1 : 0) | 2), ...(extra.length ? [vint(extra.length)] : []), vint(data.length), vint(4), vint(data.length), vint(0x20), u32(zlib.crc32(data)), vint(0), vint(0), vint(title.length), title, extra]);
+    return [rarHeader(header), data];
+  });
+  return Buffer.concat([Buffer.from([0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0x01, 0x00]), rarHeader(Buffer.concat([vint(1), vint(0), vint(volume ? 1 : 0)])), ...blocks, rarHeader(Buffer.concat([vint(5), vint(0), vint(0)]))]);
+}
+async function rarFixture(t, bytes) {
+  const { root, archive } = await fixture(t);
+  const rar = archive.replace(/\.zip$/, '.rar'); await fs.writeFile(rar, bytes);
+  return { root, rar };
+}
+
+test('imports a single RAR archive through 7-Zip', async t => {
+  const { root, rar } = await rarFixture(t, rar5([{ name: 'Wrapper/Fixture.exe', data: Buffer.from('MZ-fake-game-never-executed') }]));
+  const result = await importArchive({ archive: rar, root, game: { id: '1', name: 'Fixture' }, artwork: false, spaceSaving: true });
+  assert.equal(result.extractionEngine, '7zip');
+  assert.equal(await fs.readFile(path.join(result.folder, 'Wrapper/Fixture.exe'), 'utf8'), 'MZ-fake-game-never-executed');
+  assert.equal((await scanLibrary(root)).games[0].name, 'Fixture');
+});
+
+test('refuses RAR links, path traversal and multipart volumes before extracting', async t => {
+  const data = Buffer.from('MZ');
+  const cases = [
+    [[{ name: 'Game/link', link: { type: 1, target: '../../evil' } }], {}, /links/],
+    [[{ name: 'Game/link', link: { type: 2, target: 'C:\Windows' } }], {}, /links/],
+    [[{ name: 'Game/junction', link: { type: 3, target: 'C:\Windows' } }], {}, /links/],
+    [[{ name: 'Game/a.exe', data }, { name: 'Game/hard', link: { type: 4, target: 'Game/a.exe' } }], {}, /links/],
+    [[{ name: '../evil.exe', data }], {}, /unsafe/],
+    [[{ name: 'Game/a.exe', data }], { volume: true }, /multipart/],
+  ];
+  for (const [files, options, expected] of cases) {
+    const { root, rar } = await rarFixture(t, rar5(files, options));
+    await assert.rejects(importArchive({ archive: rar, root, game: { id: '1', name: 'Fixture' }, artwork: false, spaceSaving: true }), expected);
+    assert.deepEqual((await fs.readdir(root)).filter(name => name !== '.orbit-staging'), []);
+  }
 });

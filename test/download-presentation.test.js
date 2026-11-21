@@ -31,6 +31,10 @@ test('status distinguishes transfer from install phases, unknown totals and reco
   assert.ok(downloadActions(job('one','ready')).every(([action])=>!['play','folder'].includes(action)));
   assert.ok(downloadActions(job('one','ready')).some(([action])=>action==='reimport'));
   assert.ok(downloadActions(job('one','interrupted')).some(([action])=>action==='restart'));
+  const refused=(filename,id='2088')=>downloadActions({...job('one','needs-attention'),filename,game:{id,name:'Game'}}).map(([action])=>action);
+  assert.deepEqual(refused('Crysis.rar'),['restart','delete']);
+  assert.deepEqual(refused('Crysis.part1.rar'),['delete']);
+  assert.deepEqual(refused('setup.exe'),['delete']);
   assert.match(downloadMarkup(job('one','ready'),s=>s),/Not in library/);assert.doesNotMatch(downloadMarkup(job('one','ready'),s=>s),/<progress/);
 });
 
